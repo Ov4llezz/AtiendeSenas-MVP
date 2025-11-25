@@ -1,0 +1,54 @@
+
+# === Entorno virtual ===
+venv/
+.env
+
+# === Datos pesados ===
+data/
+dataset/
+datasets/
+videos/
+*.mp4
+*.avi
+*.mkv
+*.mov
+
+# === Archivos WLASL ===
+data/wlasl100/
+data/wlasl100/videos/
+data/wlasl100/dataset/
+data/wlasl100/splits/
+data/wlasl100/*.json
+
+# === Pesos de modelos ===
+models/
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+
+# === Logs (TensorBoard) ===
+runs/
+*.log
+*.out
+*.err
+
+# === Archivos temporales y caché ===
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.swp
+*.tmp
+
+# === Jupyter Notebooks checkpoint ===
+.ipynb_checkpoints/
+
+# === Archivos generados automáticamente ===
+*.txt
+logs/
+cache/
+huggingface/
+.huggingface/
+.cache/

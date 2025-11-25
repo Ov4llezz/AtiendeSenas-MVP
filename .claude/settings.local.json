@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(uvicorn:*)",
+      "Bash(timeout /t 3 /nobreak)",
+      "Bash(pip show:*)",
+      "Bash(pip install:*)",
+      "Bash(ping:*)",
+      "Bash(curl:*)",
+      "Bash(del test_chat.json test_chat_empty.json test_video.mp4)",
+      "Bash(tree:*)",
+      "Bash(python:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(del nul)",
+      "Bash(rm:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
