@@ -152,7 +152,7 @@ class WLASLVideoDataset(Dataset):
         if split == "train":
             self.transform = transforms.Compose([
                 transforms.ToPILImage(),
-                transforms.Resize((224, 224)),
+                transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),
                 transforms.RandomHorizontalFlip(),
                 transforms.ColorJitter(brightness=0.2, contrast=0.2),
                 transforms.ToTensor(),
@@ -170,6 +170,12 @@ class WLASLVideoDataset(Dataset):
 
     def __len__(self):
         return len(self.samples)
+
+    def get_labels(self):
+        """
+        Retorna lista de labels para calcular class weights.
+        """
+        return [label for _, label in self.samples]
 
     def __getitem__(self, idx):
         """

@@ -1,6 +1,7 @@
 
 # === Entorno virtual ===
 venv/
+venv_gemini/
 .env
 
 # === Datos pesados ===
@@ -46,9 +47,11 @@ __pycache__/
 .ipynb_checkpoints/
 
 # === Archivos generados automáticamente ===
-*.txt
 logs/
 cache/
 huggingface/
 .huggingface/
 .cache/
+
+# === Configuración local de Claude ===
+.claude/*.local.json

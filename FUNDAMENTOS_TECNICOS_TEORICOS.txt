@@ -1,0 +1,1046 @@
+================================================================================
+  FUNDAMENTOS TÉCNICOS Y TEÓRICOS - PROYECTO AtiendeSenas
+  Sistema de Reconocimiento de Lengua de Señas usando VideoMAE
+================================================================================
+
+Autor: Rafael Ovalle
+Institución: Universidad Andrés Bello (UNAB)
+Fecha: Noviembre 2025
+
+
+================================================================================
+1. INTRODUCCIÓN Y CONTEXTO
+================================================================================
+
+1.1 Problemática
+
+La lengua de señas es el medio de comunicación principal para millones de
+personas sordas y con discapacidad auditiva en todo el mundo. Sin embargo,
+la mayoría de la población oyente no tiene conocimiento de lengua de señas,
+lo que genera una barrera de comunicación significativa.
+
+El reconocimiento automático de lengua de señas (Sign Language Recognition -
+SLR) es un campo de investigación en visión computacional que busca construir
+sistemas capaces de interpretar y traducir gestos de lengua de señas a texto
+o voz, facilitando la comunicación entre personas sordas y oyentes.
+
+1.2 Desafíos del Reconocimiento de Lengua de Señas
+
+- Variabilidad temporal: Las señas tienen duraciones variables
+- Movimiento complejo: Involucran manos, brazos, expresiones faciales y
+  movimientos corporales
+- Contexto espacial: La ubicación relativa de las manos es crucial
+- Ambigüedad: Algunas señas son visualmente similares pero tienen significados
+  diferentes
+- Datos limitados: Los datasets de lengua de señas son significativamente más
+  pequeños que los datasets de reconocimiento de acción en video genérico
+
+
+================================================================================
+2. FUNDAMENTOS DE DEEP LEARNING PARA VIDEO
+================================================================================
+
+2.1 Evolución de Arquitecturas para Entendimiento de Video
+
+a) Redes Convolucionales 3D (C3D)
+   - Extienden convoluciones 2D a 3D (espacial + temporal)
+   - Costo computacional muy alto
+   - Limitadas a videos cortos
+
+b) Two-Stream Networks
+   - Stream espacial: procesa frames RGB
+   - Stream temporal: procesa optical flow
+   - Capturan apariencia y movimiento por separado
+   - Requieren preprocesamiento costoso (optical flow)
+
+c) Redes Recurrentes (LSTM/GRU)
+   - Procesan secuencias de features extraídas por CNNs
+   - Capturan dependencias temporales de largo plazo
+   - Entrenamiento secuencial (no paralelizable)
+
+d) Transformers para Video (State-of-the-art actual)
+   - Mecanismos de atención para modelar relaciones espacio-temporales
+   - Altamente paralelizables
+   - Mejor captura de dependencias de largo alcance
+   - Ejemplos: TimeSformer, ViViT, VideoMAE
+
+
+2.2 Vision Transformers (ViT) - Fundamento de VideoMAE
+
+Los Vision Transformers adaptan la arquitectura Transformer (originalmente
+diseñada para NLP) a visión computacional:
+
+a) Patchificación
+   - Una imagen se divide en patches (ej: 16x16 píxeles)
+   - Cada patch se "aplana" en un vector 1D
+   - Similar a cómo se tokeniza texto en NLP
+
+b) Embeddings posicionales
+   - Se añade información de posición a cada patch
+   - Permite al modelo entender la estructura espacial
+
+c) Self-Attention
+   - Cada patch "atiende" a todos los demás patches
+   - Captura relaciones globales en la imagen
+   - Fórmula: Attention(Q, K, V) = softmax(QK^T / √d_k) V
+
+d) Multi-Head Attention
+   - Múltiples mecanismos de atención en paralelo
+   - Cada "cabeza" aprende diferentes tipos de relaciones
+   - Las salidas se concatenan y proyectan
+
+e) Feed-Forward Networks (FFN)
+   - Capas densas que transforman las representaciones
+   - Aplicadas independientemente a cada posición
+   - Típicamente: Linear → GELU → Dropout → Linear
+
+
+2.3 Masked Autoencoders (MAE) - Paradigma de Pre-entrenamiento
+
+MAE es un método de aprendizaje auto-supervisado inspirado en BERT (NLP):
+
+Concepto clave:
+  "Enmascara aleatoriamente partes de la entrada y aprende a reconstruirlas"
+
+Ventajas:
+- No requiere etiquetas (auto-supervisado)
+- Aprende representaciones robustas
+- Eficiente: solo procesa patches visibles durante entrenamiento
+
+Proceso:
+1. Enmascara aleatoriamente 75-90% de los patches de la imagen
+2. Codifica solo los patches visibles (10-25%)
+3. Decodifica para reconstruir la imagen completa
+4. Función de pérdida: MSE entre imagen original y reconstruida
+
+Intuición:
+  Al forzar al modelo a reconstruir partes faltantes, aprende representaciones
+  semánticas profundas sobre la estructura visual del contenido.
+
+
+================================================================================
+3. VideoMAE: MASKED AUTOENCODERS PARA VIDEO
+================================================================================
+
+3.1 Arquitectura VideoMAE
+
+VideoMAE extiende MAE de imágenes estáticas a video, añadiendo la dimensión
+temporal.
+
+Componentes principales:
+
+a) Tubelet Embedding
+   - Divide el video en "tubelets" espacio-temporales (ej: 2x16x16 píxeles)
+   - Cada tubelet cubre 2 frames y un área de 16x16 píxeles
+   - Se proyectan a un espacio de embedding de dimensión D (típicamente 768)
+
+b) Positional Encoding Espacio-Temporal
+   - Embedding espacial: posición x,y del tubelet en el frame
+   - Embedding temporal: posición t del tubelet en el video
+   - Se suman al embedding del tubelet
+
+c) Masked Tubelet Modeling
+   - Durante pre-entrenamiento: enmascara ~90% de los tubelets
+   - Solo los tubelets visibles pasan por el encoder
+   - El decoder reconstruye todos los tubelets (visibles + enmascarados)
+
+d) Transformer Encoder
+   - Stack de bloques Transformer (típicamente 12 capas en VideoMAE-Base)
+   - Cada bloque contiene:
+     * Multi-Head Self-Attention (MSA)
+     * Feed-Forward Network (FFN)
+     * Layer Normalization
+     * Residual Connections
+
+e) Decoder (solo pre-entrenamiento)
+   - Más ligero que el encoder (típicamente 4 capas)
+   - Reconstruye los tubelets enmascarados
+   - Se descarta después del pre-entrenamiento
+
+f) Classification Head (fine-tuning)
+   - Toma el token [CLS] del encoder
+   - Linear layer: embedding_dim → num_classes
+   - Softmax para probabilidades de clase
+
+
+3.2 Ecuaciones Clave
+
+Input tubelet embedding:
+  e_i = Linear(tubelet_i) + pos_embedding_spatial + pos_embedding_temporal
+
+Self-Attention:
+  Q = e_i W_Q,  K = e_i W_K,  V = e_i W_V
+  Attention(Q, K, V) = softmax(QK^T / √d_k) V
+
+Transformer Block:
+  z'_l = MSA(LN(z_{l-1})) + z_{l-1}        [Self-attention + residual]
+  z_l = FFN(LN(z'_l)) + z'_l                [Feed-forward + residual]
+
+Classification:
+  logits = Linear(z_L[CLS])
+  probs = softmax(logits)
+
+
+3.3 Pre-entrenamiento vs Fine-tuning
+
+PRE-ENTRENAMIENTO (en datasets grandes como Kinetics-400):
+  - Objetivo: Reconstruir tubelets enmascarados
+  - Loss: Mean Squared Error (MSE) en espacio de píxeles
+  - Dataset: Videos sin etiquetar o con etiquetas genéricas
+  - Resultado: Pesos del encoder que capturan características espacio-temporales
+
+FINE-TUNING (en dataset específico como WLASL100):
+  - Objetivo: Clasificación de acciones/señas
+  - Loss: Cross-Entropy con etiquetas de clase
+  - Dataset: Videos etiquetados del dominio objetivo
+  - Resultado: Modelo especializado para la tarea específica
+
+
+3.4 Ventajas de VideoMAE para Sign Language Recognition
+
+1. Eficiencia Computacional
+   - Solo procesa 10% de tubelets durante pre-entrenamiento
+   - Requiere menos memoria y cómputo que métodos densos
+
+2. Robustez a Oclusiones
+   - Entrenado para manejar partes faltantes
+   - Útil cuando manos/brazos se ocultan parcialmente
+
+3. Captura de Movimiento Fino
+   - Atención espacio-temporal captura movimientos sutiles de manos
+   - Crucial para distinguir señas similares
+
+4. Transfer Learning Efectivo
+   - Pre-entrenamiento en Kinetics captura movimiento humano general
+   - Fine-tuning adapta a gestos específicos de lengua de señas
+
+5. Escalabilidad
+   - Arquitectura Transformer permite procesar videos más largos
+   - Paralelización eficiente en GPUs
+
+
+================================================================================
+4. DATASET WLASL100
+================================================================================
+
+4.1 Descripción
+
+WLASL (Word-Level American Sign Language) es un dataset público de lengua de
+señas americana desarrollado por investigadores de la Universidad de Boston.
+
+WLASL100 es un subconjunto que contiene:
+- 100 clases (palabras/señas diferentes)
+- ~2,000 videos en total (antes de limpieza)
+- Múltiples señantes por clase (variabilidad)
+- Videos grabados en condiciones del mundo real
+
+Características:
+- Resolución variable (estandarizada a 224x224 en preprocesamiento)
+- Duración variable (1-4 segundos típicamente)
+- Fondos diversos
+- Iluminación variable
+- Diferentes edades, géneros y etnias de señantes
+
+
+4.2 Estructura de Datos en el Proyecto
+
+data/wlasl100/
+├── videos/              # Videos organizados por glosa
+│   ├── before/
+│   ├── book/
+│   ├── chair/
+│   └── ...
+├── splits/
+│   ├── train_split.txt  # 807 videos (70%)
+│   ├── val_split.txt    # 194 videos (17%)
+│   └── test_split.txt   # 117 videos (13%)
+└── wlasl_class_list.txt # Mapeo clase_id → glosa
+
+
+4.3 Preprocesamiento y Limpieza
+
+Problemas identificados:
+- 114 videos corruptos detectados (no legibles por OpenCV)
+- Frames ilegibles o con count=0
+- Inconsistencias en metadata
+
+Solución implementada:
+- Script clean_corrupted_videos.py
+- Validación frame-by-frame con cv2.VideoCapture
+- Actualización automática de splits después de eliminar corruptos
+
+Resultado:
+- Train: 892 → 807 videos válidos
+- Val: 212 → 194 videos válidos
+- Test: 128 → 117 videos válidos
+
+
+4.4 Sampling de Frames
+
+VideoMAE requiere un número fijo de frames (típicamente 16).
+
+Estrategia de sampling uniforme:
+- Calcular total_frames del video
+- Seleccionar 16 frames equidistantes
+- Fórmula: indices = linspace(0, total_frames-1, num_frames)
+
+Ejemplo (video de 60 frames, necesitamos 16):
+  indices = [0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60]
+
+Ventaja:
+- Captura toda la secuencia de la seña
+- No sesgado al inicio o fin
+- Consistente entre videos de diferentes duraciones
+
+
+4.5 Desbalance de Clases
+
+Problema común en datasets de lengua de señas: algunas clases tienen muchos
+más ejemplos que otras.
+
+Impacto:
+- Modelo sesgado hacia clases mayoritarias
+- Clases minoritarias sub-representadas en aprendizaje
+
+Solución (implementada en train.py):
+- Class Weighting: asignar pesos inversamente proporcionales a frecuencia
+- Fórmula: weight_i = 1 / count_i, normalizado por la media
+
+
+================================================================================
+5. METODOLOGÍA DE ENTRENAMIENTO
+================================================================================
+
+5.1 Transfer Learning Pipeline
+
+Fase 1: Carga de Modelo Pre-entrenado
+  - Checkpoint: MCG-NJU/videomae-base-finetuned-kinetics
+  - Pre-entrenado en: Kinetics-400 (acción humana genérica)
+  - Arquitectura: VideoMAE-Base (12 capas, 768 dim, 12 heads)
+
+Fase 2: Adaptación de Classification Head
+  - Original: 400 clases (Kinetics)
+  - Modificado: 100 clases (WLASL100)
+  - ignore_mismatched_sizes=True permite cambiar num_labels
+
+Fase 3: Fine-tuning
+  - Entrenar TODO el modelo (backbone + head)
+  - Tasa de aprendizaje baja (1e-4) para no destruir conocimiento pre-entrenado
+  - Regularización fuerte (weight_decay=0.05, label_smoothing=0.1)
+
+
+5.2 Función de Pérdida (Loss Function)
+
+Cross-Entropy Loss con mejoras:
+
+a) Formulación Básica:
+   L = -Σ y_i * log(p_i)
+   donde:
+     y_i = etiqueta one-hot verdadera
+     p_i = probabilidad predicha para clase i
+
+b) Label Smoothing (α=0.1):
+   y'_i = y_i * (1 - α) + α/K
+   donde K = número de clases
+
+   Efecto:
+   - Suaviza etiquetas one-hot duras [0,0,1,0] → [0.001, 0.001, 0.901, 0.001]
+   - Previene overconfidence
+   - Mejora generalización
+   - Actúa como regularizador
+
+c) Class Weighting:
+   L_weighted = -Σ w_i * y_i * log(p_i)
+   donde w_i = peso de clase i
+
+   Cálculo de pesos:
+   1. count_i = número de muestras de clase i
+   2. w_i = 1 / count_i
+   3. Normalizar: w_i = w_i / mean(w)
+
+   Efecto:
+   - Clases raras tienen mayor peso en la pérdida
+   - Fuerza al modelo a aprender clases minoritarias
+   - Balancea el gradiente de aprendizaje
+
+
+5.3 Optimización
+
+Optimizador: AdamW (Adam with Weight Decay)
+  - Adam: Adaptive Moment Estimation
+  - Mantiene momentos de primer y segundo orden del gradiente
+  - Weight decay desacoplado (no afecta a momento)
+
+Parámetros:
+  - lr = 1e-4 (learning rate)
+  - betas = (0.9, 0.999) [momentos]
+  - weight_decay = 0.05 (regularización L2)
+  - eps = 1e-8 (estabilidad numérica)
+
+Ecuaciones AdamW:
+  m_t = β₁ * m_{t-1} + (1-β₁) * g_t         [primer momento]
+  v_t = β₂ * v_{t-1} + (1-β₂) * g_t²        [segundo momento]
+  m̂_t = m_t / (1 - β₁ᵗ)                     [bias correction]
+  v̂_t = v_t / (1 - β₂ᵗ)                     [bias correction]
+  θ_t = θ_{t-1} - lr * (m̂_t / (√v̂_t + ε) + λ * θ_{t-1})
+
+  donde λ = weight_decay
+
+
+5.4 Learning Rate Scheduling
+
+Estrategia: Warmup + Cosine Annealing
+
+a) Warmup Phase (10% de steps totales):
+   - lr aumenta linealmente de 0 a lr_max
+   - Fórmula: lr = lr_max * (current_step / warmup_steps)
+   - Razón: Estabiliza entrenamiento en etapas tempranas
+
+b) Cosine Annealing Phase (90% restante):
+   - lr decrece siguiendo curva coseno
+   - Fórmula: lr = lr_min + (lr_max - lr_min) * 0.5 * (1 + cos(π * progress))
+   - progress = (step - warmup_steps) / (total_steps - warmup_steps)
+   - lr_min = 1e-6 (nunca llega a cero)
+
+Ventajas:
+- Warmup previene explosión de gradientes al inicio
+- Cosine decay permite convergencia suave
+- lr nunca es exactamente 0 (permite micro-ajustes)
+
+Ejemplo (1000 steps, warmup=10%):
+  Step 0-100:   lr crece 0 → 1e-4 (warmup)
+  Step 100-1000: lr decrece 1e-4 → 1e-6 (cosine)
+
+
+5.5 Data Augmentation
+
+Transformaciones aplicadas a frames de video:
+
+a) ENTRENAMIENTO:
+   1. RandomResizedCrop(224, scale=(0.8, 1.0))
+      - Crop aleatorio entre 80-100% del tamaño original
+      - Resize a 224x224
+      - Simula variaciones de escala y posición
+
+   2. RandomHorizontalFlip(p=0.5)
+      - Volteo horizontal con probabilidad 50%
+      - CUIDADO: En lengua de señas, algunas señas cambian significado
+      - En WLASL, la mayoría de señas son simétricas o contextuales
+
+   3. Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+      - Normaliza a rango [-1, 1]
+      - Estabiliza entrenamiento
+
+b) VALIDACIÓN/TEST:
+   1. Resize(256)
+   2. CenterCrop(224)
+   3. Normalize (mismo que training)
+
+Razón para diferentes transforms:
+- Training: Augmentation aumenta variabilidad → mejor generalización
+- Val/Test: Determinístico → evaluación consistente
+
+
+5.6 Early Stopping
+
+Mecanismo de regularización que detiene entrenamiento si no hay mejora.
+
+Implementación:
+  - Métrica monitoreada: Validation Loss
+  - Patience: 5 epochs
+  - Lógica:
+      if val_loss < best_val_loss:
+          best_val_loss = val_loss
+          patience_counter = 0
+          guardar checkpoint
+      else:
+          patience_counter += 1
+          if patience_counter >= 5:
+              STOP
+
+Ventajas:
+- Previene overfitting
+- Ahorra tiempo de cómputo
+- Retorna mejor modelo (no el último)
+
+Desventaja:
+- Puede detenerse prematuramente si val_loss es ruidoso
+
+
+5.7 Batch Size y Accumulation
+
+Batch Size: 8 (videos por batch)
+- Balance entre memoria GPU y estabilidad de gradiente
+- Videos son datos pesados (~3.2M parámetros por video de 16 frames)
+
+Gradient Accumulation (si implementado):
+  - Acumula gradientes de N micro-batches
+  - Actualiza pesos cada N micro-batches
+  - Effective batch size = batch_size * N
+  - Permite simular batches grandes con GPUs pequeñas
+
+
+================================================================================
+6. MÉTRICAS DE EVALUACIÓN
+================================================================================
+
+6.1 Accuracy (Exactitud)
+
+Definición:
+  Accuracy = (TP + TN) / (TP + TN + FP + FN)
+
+Para clasificación multiclase:
+  Accuracy = Muestras Correctas / Total de Muestras
+
+Interpretación:
+- Métrica global más intuitiva
+- Problema: Sesgada en datasets desbalanceados
+- Ejemplo: Si 90% de muestras son clase A, predecir siempre A da 90% accuracy
+
+
+6.2 Precision, Recall, F1-Score
+
+Para cada clase i:
+
+Precision_i = TP_i / (TP_i + FP_i)
+  "De las predicciones como clase i, ¿cuántas fueron correctas?"
+
+Recall_i = TP_i / (TP_i + FN_i)
+  "De las muestras verdaderas de clase i, ¿cuántas detectamos?"
+
+F1_i = 2 * (Precision_i * Recall_i) / (Precision_i + Recall_i)
+  "Media armónica de Precision y Recall"
+
+Agregaciones:
+
+a) Macro Average:
+   - Calcula métrica para cada clase
+   - Promedia sin ponderar
+   - Todas las clases tienen igual importancia
+   - Fórmula: metric_macro = (1/K) * Σ metric_i
+
+b) Weighted Average:
+   - Calcula métrica para cada clase
+   - Promedia ponderado por soporte (cantidad de muestras)
+   - Clases con más muestras tienen más peso
+   - Fórmula: metric_weighted = Σ (support_i / N) * metric_i
+
+
+6.3 Top-K Accuracy
+
+Definición:
+  Top-K Accuracy = % de muestras donde la clase verdadera está entre las
+                   top K predicciones con mayor probabilidad
+
+Implementación:
+  1. Obtener logits del modelo
+  2. top_k_preds = torch.topk(logits, k, dim=1)
+  3. Verificar si label_verdadero está en top_k_preds
+  4. Calcular porcentaje
+
+Ejemplo:
+  Predicción: [clase_5: 0.4, clase_2: 0.3, clase_8: 0.2, ...]
+  Ground truth: clase_2
+
+  Top-1 Accuracy: ❌ (predicción top-1 es clase_5)
+  Top-3 Accuracy: ✓ (clase_2 está en top-3)
+
+Utilidad:
+- Top-1: Métrica estricta (debe acertar exactamente)
+- Top-3, Top-5: Métricas más relajadas
+- En aplicaciones reales, mostrar top-3 predicciones al usuario es útil
+
+
+6.4 Matriz de Confusión
+
+Matriz C de tamaño K x K donde:
+  C[i, j] = número de muestras de clase i predichas como clase j
+
+Diagonal:
+  C[i, i] = true positives de clase i
+
+Off-diagonal:
+  C[i, j] (i≠j) = confusiones entre clase i y j
+
+Visualización:
+- Heatmap con seaborn
+- Eje Y: Clase Real
+- Eje X: Clase Predicha
+- Color intenso = más muestras
+
+Utilidad:
+- Identificar qué clases se confunden entre sí
+- Detectar patrones de error
+- Ejemplo: Si C[clase_A, clase_B] es alto → señas A y B son visualmente
+  similares, necesitan más datos o features discriminativas
+
+
+6.5 Métricas por Clase
+
+Para cada clase i, calcular:
+- Accuracy_i = C[i,i] / support_i
+- Precision_i, Recall_i, F1_i (ver 6.2)
+- Support_i = número de muestras de clase i en test set
+
+Análisis:
+- Top-10 mejores clases: Señas bien aprendidas
+- Top-10 peores clases: Requieren atención
+  * Más datos de entrenamiento
+  * Augmentation específico
+  * Análisis de similitud con otras clases
+
+
+================================================================================
+7. IMPLEMENTACIÓN TÉCNICA
+================================================================================
+
+7.1 Stack Tecnológico
+
+Lenguaje: Python 3.8+
+Framework de Deep Learning: PyTorch 2.0+
+Transformers: Hugging Face Transformers
+Procesamiento de Video: OpenCV (cv2), decord
+Métricas y Visualización: scikit-learn, matplotlib, seaborn
+Backend API: FastAPI
+Gestión de Entorno: pip, conda
+
+
+7.2 Arquitectura del Sistema
+
+backend/
+├── app/
+│   ├── main.py           # FastAPI app
+│   ├── routes/           # Endpoints REST
+│   ├── models/           # Carga de modelo entrenado
+│   └── utils/            # Preprocesamiento
+scripts/
+├── train.py              # Pipeline de entrenamiento
+├── test.py               # Pipeline de evaluación
+├── WLASLDataset.py       # Custom Dataset
+└── clean_corrupted_videos.py
+models/
+└── checkpoints/
+    └── run_YYYYMMDD_HHMMSS/
+        ├── best_model.pt      # Pesos del modelo
+        ├── config.json        # Configuración
+        └── training_log.json  # Historial
+
+
+7.3 Custom Dataset Implementation
+
+class WLASLVideoDataset(torch.utils.data.Dataset):
+    """
+    Dataset PyTorch para WLASL100
+    """
+
+    def __init__(self, split, base_path, num_frames=16, transform=None):
+        - Lee split file (train/val/test_split.txt)
+        - Mapea glosas a class_ids
+        - Almacena (video_path, label) pairs
+
+    def __getitem__(self, idx):
+        1. Cargar video con OpenCV
+        2. Sample num_frames uniformemente
+        3. Aplicar transforms (augmentation, normalization)
+        4. Retornar (frames_tensor, label)
+            frames_tensor shape: (C=3, T=16, H=224, W=224)
+
+    def __len__(self):
+        return len(self.samples)
+
+
+7.4 Training Loop (Pseudocódigo Simplificado)
+
+for epoch in range(num_epochs):
+
+    # === TRAINING PHASE ===
+    model.train()
+    for videos, labels in train_loader:
+        videos, labels = videos.to(device), labels.to(device)
+
+        # Forward pass
+        outputs = model(pixel_values=videos)
+        logits = outputs.logits
+
+        # Compute loss (con class weights y label smoothing)
+        loss = criterion(logits, labels)
+
+        # Backward pass
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        scheduler.step()  # Update learning rate
+
+    # === VALIDATION PHASE ===
+    model.eval()
+    with torch.no_grad():
+        for videos, labels in val_loader:
+            outputs = model(pixel_values=videos)
+            val_loss += criterion(outputs.logits, labels)
+
+    # === EARLY STOPPING CHECK ===
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        save_checkpoint(model, optimizer, epoch, val_loss)
+        patience_counter = 0
+    else:
+        patience_counter += 1
+        if patience_counter >= patience:
+            print("Early stopping triggered")
+            break
+
+
+7.5 Checkpointing
+
+Estructura del checkpoint (.pt file):
+
+{
+    'model_state_dict': model.state_dict(),      # Pesos del modelo
+    'optimizer_state_dict': optimizer.state_dict(),  # Estado del optimizador
+    'epoch': epoch,
+    'val_acc': val_accuracy,
+    'val_loss': val_loss,
+    'best_val_loss': best_val_loss,
+    'config': {
+        'model_name': 'MCG-NJU/videomae-base-finetuned-kinetics',
+        'num_classes': 100,
+        'learning_rate': 1e-4,
+        'batch_size': 8,
+        # ... otros hyperparameters
+    }
+}
+
+Carga de checkpoint:
+
+checkpoint = torch.load('best_model.pt', map_location=device)
+model.load_state_dict(checkpoint['model_state_dict'])
+model.eval()
+
+
+7.6 Evaluación en Test Set
+
+Pipeline test.py:
+
+1. Cargar checkpoint (--run-id o --checkpoint_path)
+2. Inicializar modelo y cargar pesos
+3. Cargar test dataset
+4. Inferencia (modo eval, no_grad):
+   - Iterar test_loader
+   - Acumular predicciones, labels, logits
+5. Calcular métricas:
+   - Accuracy total
+   - Precision/Recall/F1 (macro y weighted)
+   - Top-K accuracies
+   - Matriz de confusión
+6. Generar visualizaciones:
+   - Heatmap de confusion matrix
+   - Gráficos de mejores/peores clases
+7. Guardar resultados:
+   - JSON (para análisis programático)
+   - TXT (para lectura humana)
+
+
+7.7 Backend API (FastAPI)
+
+Endpoints principales:
+
+POST /predict
+  - Input: Video file (multipart/form-data)
+  - Procesamiento:
+    1. Guardar video temporalmente
+    2. Preprocesar (sample frames, normalize)
+    3. Inferencia con modelo
+    4. Retornar top-K predicciones con probabilidades
+  - Output: JSON
+    {
+      "predictions": [
+        {"class": "hello", "class_id": 42, "probability": 0.87},
+        {"class": "thank you", "class_id": 89, "probability": 0.08},
+        ...
+      ]
+    }
+
+GET /health
+  - Health check del servicio
+  - Verifica que modelo esté cargado
+
+GET /classes
+  - Retorna lista de las 100 clases soportadas
+
+Características:
+- CORS habilitado para frontend
+- Manejo de errores robusto
+- Validación de formato de video
+- Límite de tamaño de archivo
+
+
+================================================================================
+8. RESULTADOS Y ANÁLISIS
+================================================================================
+
+8.1 Métricas Obtenidas (Ejemplo Real del Proyecto)
+
+Test Set Evaluation (run_20251125_230040):
+  - Total Accuracy:      49.57%
+  - Precision (Macro):   44.77%
+  - Recall (Macro):      47.54%
+  - F1-Score (Macro):    42.88%
+  - Precision (Weighted): 52.62%
+  - Recall (Weighted):   49.57%
+  - F1-Score (Weighted): 47.33%
+
+Top-K Accuracies:
+  - Top-1: 49.57%
+  - Top-3: 77.78%
+  - Top-5: 82.05%
+
+Interpretación:
+- Accuracy ~50% en Top-1 es razonable para 100 clases (random = 1%)
+- Top-3 de ~78% indica que la clase correcta suele estar entre top-3
+- Útil para aplicaciones que muestran múltiples sugerencias al usuario
+
+
+8.2 Análisis de Clases
+
+Mejores Clases (100% accuracy):
+  - Clases: 19, 22, 24, 60, 66, 75, etc.
+  - Características comunes:
+    * Gestos distintivos
+    * Movimientos amplios
+    * Poca similitud con otras señas
+    * Suficientes muestras de entrenamiento
+
+Peores Clases (0% accuracy):
+  - Clases: 45, 51, 55, 57, 64, 68, 70, 71, 72, 73
+  - Posibles causas:
+    * Muy pocas muestras (support bajo)
+    * Señas visualmente similares a otras
+    * Movimientos sutiles difíciles de capturar
+    * Calidad de video inconsistente
+
+
+8.3 Matriz de Confusión (Insights)
+
+Patrones observados:
+- Confusiones más frecuentes:
+  * Clase 3 ↔ Clase 17 (señas con movimientos de mano similares)
+  * Clase 51 → múltiples clases (seña ambigua)
+
+Causas técnicas:
+- Resolución temporal limitada (16 frames puede perder detalles)
+- Ausencia de información de pose de manos (solo RGB)
+- Variabilidad inter-señante
+
+
+8.4 Comparación con Baseline
+
+Random Guess: 1% (1/100 clases)
+Nuestro modelo: 49.57%
+
+Mejora sobre random: ~50x
+
+Estado del arte en WLASL100 (papers recientes):
+  - Modelos con pose + RGB: 55-65% accuracy
+  - Modelos con pose + RGB + optical flow: 65-75%
+  - Nuestro enfoque (solo RGB con VideoMAE): 49.57%
+
+Consideraciones:
+- Competitivo para enfoque de solo RGB
+- Espacio para mejora con datos multi-modal (pose, depth)
+
+
+================================================================================
+9. LIMITACIONES Y TRABAJO FUTURO
+================================================================================
+
+9.1 Limitaciones Actuales
+
+Datos:
+- Dataset relativamente pequeño (~1,000 videos post-cleaning)
+- Desbalance de clases significativo
+- Variabilidad limitada de señantes
+
+Modelo:
+- Solo considera información RGB (no pose de manos)
+- 16 frames pueden no capturar señas largas completamente
+- No modela co-articulación (transiciones entre señas)
+
+Infraestructura:
+- Requiere GPU para inferencia en tiempo real
+- Modelo grande (~87M parámetros) para deployment móvil
+
+
+9.2 Mejoras Propuestas
+
+Corto Plazo:
+a) Data Augmentation Avanzado
+   - Mixup/CutMix para video
+   - Augmentation temporal (speed perturbation)
+
+b) Ensemble Methods
+   - Combinar múltiples checkpoints
+   - Voting o averaging de predicciones
+
+c) Fine-tuning Selectivo
+   - Freeze early layers, fine-tune solo capas finales
+   - Learning rate diferenciado por capa
+
+Mediano Plazo:
+d) Multi-Modal Learning
+   - Integrar pose estimation (MediaPipe, OpenPose)
+   - Stream RGB + Stream pose → fusión tardía
+
+e) Temporal Modeling Mejorado
+   - Aumentar a 32 frames
+   - Tubelet size adaptativo
+
+f) Data Collection
+   - Aumentar dataset con más señantes
+   - Balancear clases minoritarias
+
+Largo Plazo:
+g) Continuous Sign Language Recognition
+   - Detectar y segmentar señas en video continuo
+   - CTC loss o seq2seq models
+
+h) Sign Language Translation
+   - SLR → Texto → Traducción a otros idiomas
+   - Integración con LLMs para contexto
+
+i) Edge Deployment
+   - Quantización del modelo (INT8)
+   - Destilación a modelos más pequeños
+   - TensorRT, ONNX para optimización
+
+
+================================================================================
+10. CONSIDERACIONES ÉTICAS Y SOCIALES
+================================================================================
+
+10.1 Privacidad
+
+- Videos de señantes contienen información personal (rostros, entornos)
+- Necesidad de consentimiento informado para recolección de datos
+- Anonimización cuando sea posible
+- Cumplimiento con regulaciones (GDPR, etc.)
+
+
+10.2 Inclusión y Accesibilidad
+
+Beneficios:
+- Facilita comunicación entre comunidades sorda y oyente
+- Reduce barreras en educación, empleo, servicios públicos
+- Empodera a personas sordas con tecnología
+
+Riesgos:
+- No reemplazar intérpretes humanos (contexto cultural importante)
+- Sistemas imperfectos pueden generar malentendidos
+- Evitar homogeneización de lenguas de señas (cada país tiene la suya)
+
+
+10.3 Sesgo y Equidad
+
+Preocupaciones:
+- ¿El modelo funciona igual para todos los señantes?
+- ¿Sesgos por género, edad, tono de piel?
+- ¿Señas de qué región geográfica están mejor representadas?
+
+Mitigación:
+- Datasets diversos (múltiples demografías)
+- Auditorías de equidad regulares
+- Participación de la comunidad sorda en desarrollo
+
+
+10.4 Transparencia
+
+- Comunicar limitaciones del sistema claramente a usuarios
+- Mostrar niveles de confianza en predicciones
+- Explicar errores cuando ocurran
+- Open-source cuando sea posible para escrutinio
+
+
+================================================================================
+11. REFERENCIAS CLAVE
+================================================================================
+
+Arquitectura VideoMAE:
+[1] Tong, Z. et al. (2022). "VideoMAE: Masked Autoencoders are Data-Efficient
+    Learners for Self-Supervised Video Pre-Training." NeurIPS 2022.
+
+Vision Transformers:
+[2] Dosovitskiy, A. et al. (2021). "An Image is Worth 16x16 Words:
+    Transformers for Image Recognition at Scale." ICLR 2021.
+
+Masked Autoencoders:
+[3] He, K. et al. (2022). "Masked Autoencoders Are Scalable Vision Learners."
+    CVPR 2022.
+
+Sign Language Recognition:
+[4] Li, D. et al. (2020). "Word-level Deep Sign Language Recognition from
+    Video: A New Large-scale Dataset and Methods Comparison." WACV 2020.
+
+[5] Joze, H.R.V. & Koller, O. (2019). "MS-ASL: A Large-Scale Data Set and
+    Benchmark for Understanding American Sign Language." BMVC 2019.
+
+Transformers para Video:
+[6] Bertasius, G. et al. (2021). "Is Space-Time Attention All You Need for
+    Video Understanding?" ICML 2021. (TimeSformer)
+
+[7] Arnab, A. et al. (2021). "ViViT: A Video Vision Transformer." ICCV 2021.
+
+Transfer Learning:
+[8] Yosinski, J. et al. (2014). "How transferable are features in deep neural
+    networks?" NeurIPS 2014.
+
+Optimización:
+[9] Loshchilov, I. & Hutter, F. (2019). "Decoupled Weight Decay
+    Regularization." ICLR 2019. (AdamW)
+
+[10] Goyal, P. et al. (2017). "Accurate, Large Minibatch SGD: Training
+     ImageNet in 1 Hour." arXiv:1706.02677. (Learning rate warmup)
+
+
+================================================================================
+12. CONCLUSIONES
+================================================================================
+
+Este proyecto implementa un sistema de reconocimiento de lengua de señas
+americana (ASL) utilizando VideoMAE, una arquitectura Transformer
+estado-del-arte para entendimiento de video.
+
+Aportes principales:
+1. Implementación completa de pipeline de entrenamiento optimizado
+2. Sistema de evaluación exhaustivo con múltiples métricas
+3. Limpieza y preprocesamiento robusto del dataset WLASL100
+4. Backend API REST para inferencia en producción
+
+Resultados:
+- 49.57% Top-1 accuracy en 100 clases
+- 77.78% Top-3 accuracy (aplicable en sistemas de sugerencias)
+- Identificación de clases problemáticas para mejora dirigida
+
+Impacto potencial:
+- Facilitar comunicación en servicios públicos, educación, emergencias
+- Herramienta de aprendizaje para estudiantes de lengua de señas
+- Base para sistemas más complejos (traducción, video continuo)
+
+El trabajo demuestra la viabilidad de transfer learning con VideoMAE para
+reconocimiento de lengua de señas, y sienta las bases para desarrollos futuros
+con datos multi-modales y modelos más sofisticados.
+
+
+================================================================================
+FIN DEL DOCUMENTO
+================================================================================
+
+Este documento puede ser utilizado como base teórica para:
+- Capítulo de Marco Teórico de la tesis
+- Sección de Metodología
+- Análisis de Resultados
+- Discusión de Limitaciones y Trabajo Futuro
+
+Para más detalles técnicos, consultar:
+- scripts/train.py (implementación de entrenamiento)
+- scripts/test.py (implementación de evaluación)
+- TRAINING_IMPROVEMENTS.md (optimizaciones aplicadas)
+- evaluation_results/ (resultados experimentales)
