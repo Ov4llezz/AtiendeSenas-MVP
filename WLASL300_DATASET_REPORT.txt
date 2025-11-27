@@ -1,0 +1,408 @@
+================================================================================
+REPORTE DETALLADO DEL DATASET WLASL300
+Sign Language Recognition - WLASL 300 Classes
+================================================================================
+
+RESUMEN GENERAL
+--------------------------------------------------------------------------------
+Total de Glosas (Clases):        300
+Total de Videos:                 2790
+  - Training:                    1960 (70.3%)
+  - Validation:                  558 (20.0%)
+  - Test:                        272 (9.7%)
+
+ESTADÍSTICAS DE DISTRIBUCIÓN
+--------------------------------------------------------------------------------
+Videos por glosa (promedio):     9.4
+Videos por glosa (mínimo):       1
+Videos por glosa (máximo):       16
+Videos por glosa (mediana):      9
+
+
+DETALLE POR GLOSA (ALFABÉTICO)
+================================================================================
+#     Glosa                     Total    Train    Val      Test    
+--------------------------------------------------------------------------------
+1     accept                    8        5        3        0       
+2     accident                  13       8        4        1       
+3     add                       9        7        1        1       
+4     africa                    9        5        2        2       
+5     again                     8        8        0        0       
+6     ago                       9        7        1        1       
+7     all                       8        6        1        1       
+8     allergy                   8        7        1        0       
+9     allow                     8        6        1        1       
+10    alone                     9        6        2        1       
+11    already                   8        6        1        1       
+12    analyze                   8        6        1        1       
+13    animal                    9        7        2        0       
+14    apple                     11       9        1        1       
+15    appointment               10       6        3        1       
+16    approve                   8        6        1        1       
+17    argue                     10       6        2        2       
+18    arrive                    8        5        2        1       
+19    australia                 9        5        2        2       
+20    awful                     8        5        2        1       
+21    baby                      9        4        4        1       
+22    backpack                  8        5        2        1       
+23    bad                       10       5        3        2       
+24    balance                   10       6        3        1       
+25    ball                      9        7        1        1       
+26    balloon                   9        6        2        1       
+27    banana                    9        6        2        1       
+28    bar                       11       5        4        2       
+29    barely                    9        6        2        1       
+30    bark                      8        3        3        2       
+31    basketball                12       9        2        1       
+32    beard                     9        6        2        1       
+33    because                   10       5        3        2       
+34    bed                       13       10       2        1       
+35    beer                      8        5        2        1       
+36    before                    16       10       5        1       
+37    big                       9        8        1        0       
+38    bird                      10       8        2        0       
+39    bitter                    8        5        2        1       
+40    black                     10       8        1        1       
+41    blanket                   10       8        1        1       
+42    blind                     8        5        2        1       
+43    blue                      8        6        1        1       
+44    boat                      8        6        2        0       
+45    bother                    8        7        1        0       
+46    bottom                    8        4        3        1       
+47    bowling                   13       8        3        2       
+48    boy                       8        7        0        1       
+49    bring                     8        6        1        1       
+50    brother                   11       9        1        1       
+51    brown                     8        8        0        0       
+52    buy                       9        8        0        1       
+53    cafeteria                 8        5        2        1       
+54    cake                      8        7        0        1       
+55    california                9        7        2        0       
+56    call                      12       10       2        0       
+57    can                       9        6        2        1       
+58    cancel                    8        6        1        1       
+59    candy                     13       7        4        2       
+60    card                      8        4        2        2       
+61    careful                   9        6        2        1       
+62    carrot                    9        4        3        2       
+63    cat                       9        7        0        2       
+64    catch                     9        4        3        2       
+65    cereal                    8        7        1        0       
+66    champion                  11       8        2        1       
+67    change                    12       9        3        0       
+68    chat                      9        6        2        1       
+69    cheat                     10       4        4        2       
+70    check                     11       7        3        1       
+71    child                     7        5        2        0       
+72    christmas                 1        0        1        0       
+73    city                      3        2        1        0       
+74    class                     2        2        0        0       
+75    close                     8        6        1        1       
+76    cloud                     8        5        2        1       
+77    cold                      12       8        2        2       
+78    color                     8        5        2        1       
+79    come here                 8        6        1        1       
+80    computer                  14       8        3        3       
+81    convince                  10       7        1        2       
+82    cook                      8        4        2        2       
+83    cookie                    8        6        2        0       
+84    cool                      16       10       4        2       
+85    cop                       8        6        2        0       
+86    copy                      8        3        3        2       
+87    corn                      12       6        4        2       
+88    correct                   9        7        1        1       
+89    country                   9        8        1        0       
+90    cousin                    14       12       1        1       
+91    cow                       9        6        2        1       
+92    crash                     9        8        1        0       
+93    cry                       10       7        2        1       
+94    cut                       8        4        3        1       
+95    dark                      12       11       1        0       
+96    daughter                  10       8        2        0       
+97    day                       9        8        1        0       
+98    deaf                      11       9        1        1       
+99    decide                    9        6        2        1       
+100   decorate                  9        8        1        0       
+101   deep                      8        5        2        1       
+102   delay                     11       8        2        1       
+103   delicious                 10       8        2        0       
+104   demand                    8        6        0        2       
+105   dentist                   8        5        2        1       
+106   dessert                   8        5        2        1       
+107   develop                   8        7        0        1       
+108   different                 8        7        0        1       
+109   dirty                     9        7        2        0       
+110   disconnect                8        4        2        2       
+111   discuss                   8        6        1        1       
+112   dive                      9        7        2        0       
+113   doctor                    10       8        2        0       
+114   dog                       11       7        3        1       
+115   dollar                    8        6        1        1       
+116   down                      8        6        1        1       
+117   dress                     8        6        2        0       
+118   drink                     15       13       2        0       
+119   drop                      9        7        1        1       
+120   dry                       9        7        2        0       
+121   ear                       8        7        0        1       
+122   east                      8        4        2        2       
+123   enjoy                     8        4        3        1       
+124   environment               11       5        3        3       
+125   escape                    8        4        3        1       
+126   example                   11       8        2        1       
+127   exchange                  8        5        3        0       
+128   expensive                 8        6        2        0       
+129   face                      8        5        2        1       
+130   family                    11       7        3        1       
+131   far                       11       8        2        1       
+132   farm                      8        6        2        0       
+133   fast                      9        5        3        1       
+134   fat                       10       9        1        0       
+135   fault                     9        9        0        0       
+136   find                      8        6        1        1       
+137   fine                      9        7        1        1       
+138   finish                    9        8        1        0       
+139   first                     9        5        2        2       
+140   fish                      10       9        1        0       
+141   fly                       8        6        1        1       
+142   follow                    9        7        1        1       
+143   football                  9        8        0        1       
+144   form                      9        8        1        0       
+145   front                     8        6        1        1       
+146   full                      10       7        2        1       
+147   future                    9        5        2        2       
+148   girl                      9        5        3        1       
+149   give                      10       6        2        2       
+150   glasses                   9        8        0        1       
+151   go                        15       14       1        0       
+152   good                      10       6        3        1       
+153   government                10       9        1        0       
+154   graduate                  10       8        2        0       
+155   grammar                   9        7        1        1       
+156   great                     9        7        2        0       
+157   group                     8        6        2        0       
+158   hair                      9        6        2        1       
+159   halloween                 9        8        1        0       
+160   happy                     8        6        2        0       
+161   hat                       9        5        4        0       
+162   headache                  9        7        2        0       
+163   hear                      9        9        0        0       
+164   hearing                   8        8        0        0       
+165   heart                     8        7        1        0       
+166   helicopter                8        5        2        1       
+167   help                      14       9        4        1       
+168   her                       8        7        1        0       
+169   history                   8        6        2        0       
+170   hope                      9        8        1        0       
+171   hot                       10       6        2        2       
+172   how                       9        9        0        0       
+173   humble                    8        5        2        1       
+174   idea                      8        4        1        3       
+175   important                 8        6        1        1       
+176   improve                   9        4        4        1       
+177   inform                    9        5        3        1       
+178   interest                  10       9        0        1       
+179   internet                  8        7        1        0       
+180   jealous                   8        5        1        2       
+181   join                      8        5        2        1       
+182   kiss                      9        7        2        0       
+183   know                      8        4        3        1       
+184   language                  10       5        3        2       
+185   last                      12       9        2        1       
+186   late                      8        8        0        0       
+187   later                     12       10       1        1       
+188   laugh                     11       6        3        2       
+189   learn                     8        6        1        1       
+190   leave                     11       5        5        1       
+191   lemon                     8        8        0        0       
+192   letter                    11       6        3        2       
+193   light                     8        4        3        1       
+194   like                      10       6        3        1       
+195   list                      9        7        2        0       
+196   lose                      9        5        2        2       
+197   make                      9        6        2        1       
+198   man                       12       7        3        2       
+199   many                      10       8        2        0       
+200   match                     8        7        1        0       
+201   mean                      8        5        2        1       
+202   meat                      8        6        2        0       
+203   medicine                  8        6        1        1       
+204   meet                      9        6        2        1       
+205   minute                    9        5        2        2       
+206   mirror                    8        6        2        0       
+207   miss                      8        7        1        0       
+208   more                      8        5        2        1       
+209   mother                    11       8        3        0       
+210   move                      10       6        3        1       
+211   music                     8        6        2        0       
+212   near                      9        6        2        1       
+213   necklace                  9        8        1        0       
+214   new                       9        7        2        0       
+215   no                        11       9        2        0       
+216   now                       9        7        2        0       
+217   office                    9        5        2        2       
+218   one                       8        5        1        2       
+219   onion                     8        4        3        1       
+220   orange                    10       6        3        1       
+221   order                     10       4        4        2       
+222   outside                   9        5        3        1       
+223   overwhelm                 8        5        2        1       
+224   pants                     8        6        1        1       
+225   paper                     8        4        3        1       
+226   party                     9        8        1        0       
+227   past                      9        5        3        1       
+228   perspective               10       8        1        1       
+229   pink                      9        8        1        0       
+230   pizza                     12       6        5        1       
+231   play                      11       7        3        1       
+232   point                     9        8        1        0       
+233   police                    8        6        1        1       
+234   possible                  8        6        2        0       
+235   postpone                  8        5        2        1       
+236   potato                    8        5        1        2       
+237   practice                  9        7        1        1       
+238   president                 9        5        2        2       
+239   problem                   9        8        1        0       
+240   pull                      9        7        2        0       
+241   ready                     10       7        2        1       
+242   right                     9        6        2        1       
+243   room                      11       9        2        0       
+244   same                      9        7        0        2       
+245   sandwich                  10       8        1        1       
+246   school                    9        6        2        1       
+247   score                     11       9        2        0       
+248   secretary                 10       7        2        1       
+249   shirt                     12       7        3        2       
+250   shock                     9        7        1        1       
+251   short                     13       11       2        0       
+252   show                      9        7        1        1       
+253   sign                      9        5        2        2       
+254   silly                     10       8        1        1       
+255   snow                      10       4        4        2       
+256   son                       10       7        2        1       
+257   soon                      11       11       0        0       
+258   speech                    10       5        4        1       
+259   stay                      9        6        2        1       
+260   study                     10       8        1        1       
+261   sweet                     10       5        4        1       
+262   take                      11       9        1        1       
+263   tall                      13       9        2        2       
+264   tell                      10       7        2        1       
+265   thanksgiving              13       8        3        2       
+266   theory                    10       8        1        1       
+267   thin                      16       10       5        1       
+268   thursday                  11       8        2        1       
+269   tiger                     9        7        1        1       
+270   toast                     10       7        2        1       
+271   today                     9        5        3        1       
+272   town                      9        6        2        1       
+273   trade                     13       9        3        1       
+274   train                     9        5        3        1       
+275   travel                    9        7        2        0       
+276   ugly                      9        5        3        1       
+277   upset                     9        7        1        1       
+278   visit                     9        5        3        1       
+279   voice                     9        7        1        1       
+280   vomit                     9        6        2        1       
+281   wait                      10       7        2        1       
+282   walk                      11       7        2        2       
+283   want                      9        6        2        1       
+284   water                     9        8        1        0       
+285   week                      9        6        2        1       
+286   weekend                   9        8        0        1       
+287   wet                       9        6        3        0       
+288   what                      12       6        4        2       
+289   white                     10       8        1        1       
+290   who                       14       8        4        2       
+291   why                       11       8        2        1       
+292   woman                     11       5        4        2       
+293   work                      10       7        2        1       
+294   wow                       9        5        1        3       
+295   write                     10       6        2        2       
+296   year                      10       6        2        2       
+297   yes                       12       10       1        1       
+298   yesterday                 10       7        2        1       
+================================================================================
+
+TOP 20 GLOSAS CON MÁS VIDEOS
+================================================================================
+Rank   Glosa                     Total    Train    Val      Test    
+--------------------------------------------------------------------------------
+1      before                    16       10       5        1       
+2      cool                      16       10       4        2       
+3      thin                      16       10       5        1       
+4      drink                     15       13       2        0       
+5      go                        15       14       1        0       
+6      computer                  14       8        3        3       
+7      cousin                    14       12       1        1       
+8      help                      14       9        4        1       
+9      who                       14       8        4        2       
+10     accident                  13       8        4        1       
+11     bed                       13       10       2        1       
+12     bowling                   13       8        3        2       
+13     candy                     13       7        4        2       
+14     short                     13       11       2        0       
+15     tall                      13       9        2        2       
+16     thanksgiving              13       8        3        2       
+17     trade                     13       9        3        1       
+18     basketball                12       9        2        1       
+19     call                      12       10       2        0       
+20     change                    12       9        3        0       
+================================================================================
+
+TOP 20 GLOSAS CON MENOS VIDEOS
+================================================================================
+Rank   Glosa                     Total    Train    Val      Test    
+--------------------------------------------------------------------------------
+1      christmas                 1        0        1        0       
+2      class                     2        2        0        0       
+3      city                      3        2        1        0       
+4      child                     7        5        2        0       
+5      accept                    8        5        3        0       
+6      again                     8        8        0        0       
+7      allergy                   8        7        1        0       
+8      all                       8        6        1        1       
+9      allow                     8        6        1        1       
+10     already                   8        6        1        1       
+11     analyze                   8        6        1        1       
+12     approve                   8        6        1        1       
+13     arrive                    8        5        2        1       
+14     awful                     8        5        2        1       
+15     backpack                  8        5        2        1       
+16     bark                      8        3        3        2       
+17     beer                      8        5        2        1       
+18     bitter                    8        5        2        1       
+19     blind                     8        5        2        1       
+20     blue                      8        6        1        1       
+================================================================================
+
+INFORMACIÓN DEL DATASET
+================================================================================
+Nombre:           WLASL300
+Fuente:           WLASL (Word-Level American Sign Language)
+Origen:           Voxel51/WLASL (HuggingFace)
+Idioma:           American Sign Language (ASL)
+Tipo:             Video (Sign Language Recognition)
+Selección:        Top 300 glosas con más videos del dataset completo
+Formato videos:   MP4
+Resolución:       Variable (procesado a 224x224 en entrenamiento)
+FPS:              Variable (muestreado a 16 frames por video)
+
+Estructura del dataset:
+  data/wlasl300/
+  ├── dataset/
+  │   ├── train/          # Videos de entrenamiento
+  │   ├── val/            # Videos de validación
+  │   └── test/           # Videos de prueba
+  ├── splits/
+  │   ├── train_split.txt
+  │   ├── val_split.txt
+  │   └── test_split.txt
+  ├── nslt_300.json       # Mapeo video_id -> clase
+  ├── WLASL_v0.3_300.json # Metadata del dataset
+  └── gloss_to_id.json    # Mapeo glosa -> ID de clase
+
+================================================================================
+Generado por: scripts/generate_wlasl300_report.py
+Proyecto: AtiendeSenas - Tesis UNAB
+Autor: Rafael Ovalle
+================================================================================
