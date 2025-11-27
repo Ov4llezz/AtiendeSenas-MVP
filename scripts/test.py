@@ -2,7 +2,7 @@
 test.py - Evaluación completa del modelo VideoMAE en test set
 
 Autor: Rafael Ovalle - Tesis UNAB
-Dataset: WLASL100 (100 clases de lengua de señas)
+Dataset: WLASL100/WLASL300 (100 o 300 clases de lengua de señas)
 
 Genera:
 - Accuracy total y por clase
@@ -622,9 +622,28 @@ def main(args):
 
     device = config["device"]
 
+    # ===== CARGAR MODELO PRIMERO PARA OBTENER CONFIG =====
     print(f"\n{'='*70}")
-    print(f"{'EVALUACIÓN EN TEST SET - VideoMAE WLASL100':^70}")
+    print(f"{'CARGANDO MODELO Y CONFIGURACIÓN':^70}")
+    print(f"{'='*70}\n")
+    model, train_config = load_model(config["checkpoint_path"], device)
+
+    # ===== CONFIGURAR DATASET BASADO EN TRAIN_CONFIG =====
+    num_classes = train_config.get("num_classes", 100)
+    # Usar base_path del entrenamiento si está disponible, sino usar el default/especificado
+    if "base_path" in train_config:
+        config["base_path"] = train_config["base_path"]
+    # Auto-detectar dataset basado en num_classes si base_path no fue especificado por CLI
+    elif config["base_path"] == "data/wlasl100" and num_classes == 300:
+        config["base_path"] = "data/wlasl300"
+
+    dataset_label = "WLASL300" if num_classes == 300 else "WLASL100"
+
+    print(f"\n{'='*70}")
+    print(f"{'EVALUACIÓN EN TEST SET - VideoMAE ' + dataset_label:^70}")
     print(f"{'='*70}")
+    print(f"Dataset: {dataset_label} ({num_classes} clases)")
+    print(f"Base path: {config['base_path']}")
     print(f"Device: {device}")
     print(f"Checkpoint: {config['checkpoint_path']}")
     print(f"Batch size: {config['batch_size']}")
@@ -634,14 +653,12 @@ def main(args):
     output_dir = config["output_dir"]
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    # ===== CARGAR MODELO =====
-    model, train_config = load_model(config["checkpoint_path"], device)
-
     # ===== CARGAR TEST DATASET =====
     print("[INFO] Cargando test dataset...")
     test_dataset = WLASLVideoDataset(
         split="test",
-        base_path=config["base_path"]
+        base_path=config["base_path"],
+        dataset_size=num_classes
     )
 
     test_loader = DataLoader(

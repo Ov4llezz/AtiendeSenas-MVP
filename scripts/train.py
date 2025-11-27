@@ -1,8 +1,8 @@
 """
-train.py - Entrenamiento mejorado de VideoMAE para reconocimiento de señas WLASL100
+train.py - Entrenamiento mejorado de VideoMAE para reconocimiento de señas WLASL
 
 Autor: Rafael Ovalle - Tesis UNAB
-Dataset: WLASL100 (100 clases de lengua de señas)
+Dataset: WLASL100/WLASL300 (100 o 300 clases de lengua de señas)
 Modelo: VideoMAE (MCG-NJU/videomae-base-finetuned-kinetics)
 
 Mejoras v2:
@@ -11,6 +11,7 @@ Mejoras v2:
 - Early stopping basado en Val Loss
 - Augmentations más fuertes (RandomResizedCrop)
 - Hiperparámetros optimizados para fine-tuning
+- Soporte para WLASL100 y WLASL300
 """
 
 import os
@@ -38,6 +39,7 @@ from WLASLDataset import WLASLVideoDataset
 # ============================================================
 DEFAULT_CONFIG = {
     "model_name": "MCG-NJU/videomae-base-finetuned-kinetics",
+    "dataset": "wlasl100",  # "wlasl100" o "wlasl300"
     "num_classes": 100,
     "batch_size": 16,
     "max_epochs": 30,
@@ -346,10 +348,23 @@ def main(args):
 
     config.update(vars(args))
 
+    # ===== AUTO-CONFIGURACIÓN BASADA EN DATASET =====
+    dataset_name = config["dataset"].lower()
+    if dataset_name == "wlasl300":
+        config["num_classes"] = 300
+        config["base_path"] = "data/wlasl300"
+        dataset_label = "WLASL300"
+    else:  # wlasl100 por defecto
+        config["num_classes"] = 100
+        config["base_path"] = "data/wlasl100"
+        dataset_label = "WLASL100"
+
     device = config["device"]
     print(f"\n{'='*70}")
-    print(f"{'ENTRENAMIENTO VideoMAE - WLASL100 (OPTIMIZED)':^70}")
+    print(f"{'ENTRENAMIENTO VideoMAE - ' + dataset_label + ' (OPTIMIZED)':^70}")
     print(f"{'='*70}")
+    print(f"Dataset: {dataset_label} ({config['num_classes']} clases)")
+    print(f"Base path: {config['base_path']}")
     print(f"Device: {device}")
     print(f"Modelo: {config['model_name']}")
     print(f"Batch size: {config['batch_size']}")
@@ -381,11 +396,13 @@ def main(args):
     print("[INFO] Cargando datasets...")
     train_dataset = WLASLVideoDataset(
         split="train",
-        base_path=config["base_path"]
+        base_path=config["base_path"],
+        dataset_size=config["num_classes"]
     )
     val_dataset = WLASLVideoDataset(
         split="val",
-        base_path=config["base_path"]
+        base_path=config["base_path"],
+        dataset_size=config["num_classes"]
     )
 
     train_loader = DataLoader(
@@ -570,15 +587,20 @@ def main(args):
 # ============================================================
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Entrenamiento optimizado de VideoMAE para WLASL100",
+        description="Entrenamiento optimizado de VideoMAE para WLASL100/WLASL300",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
+
+    # Dataset
+    parser.add_argument("--dataset", type=str, default=DEFAULT_CONFIG["dataset"],
+                        choices=["wlasl100", "wlasl300"],
+                        help="Dataset a utilizar: wlasl100 (100 clases) o wlasl300 (300 clases)")
 
     # Modelo
     parser.add_argument("--model_name", type=str, default=DEFAULT_CONFIG["model_name"],
                         help="Nombre del modelo pre-entrenado de Hugging Face")
     parser.add_argument("--num_classes", type=int, default=DEFAULT_CONFIG["num_classes"],
-                        help="Número de clases del dataset")
+                        help="Número de clases del dataset (se ajusta automáticamente con --dataset)")
 
     # Entrenamiento
     parser.add_argument("--batch_size", type=int, default=DEFAULT_CONFIG["batch_size"],

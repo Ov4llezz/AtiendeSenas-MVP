@@ -89,14 +89,32 @@ class WLASLVideoDataset(Dataset):
         videos_folder: str = "dataset",  # carpeta con train/val/test
         meta_json: str = "WLASL_v0.3.json",
         subset_json: str = "nslt_100.json",
+        dataset_size: int = 100,  # Número de clases: 100 o 300
     ):
         """
         split: 'train', 'val', 'test'
-        base_path: ruta base del dataset WLASL100
+        base_path: ruta base del dataset (ej: data/wlasl100 o data/wlasl300)
         videos_folder: subcarpeta donde están train/val/test
+        dataset_size: número de clases en el dataset (100 o 300)
+
+        Nota: Si dataset_size=300, automáticamente se ajustan los nombres de archivos JSON
         """
         assert split in ["train", "val", "test"]
         self.split = split
+        self.dataset_size = dataset_size
+
+        # === Auto-detectar dataset_size si no se especificó ===
+        if dataset_size == 100 and "wlasl300" in base_path.lower():
+            self.dataset_size = 300
+        elif dataset_size == 300 and "wlasl100" in base_path.lower():
+            self.dataset_size = 100
+
+        # === Ajustar nombres de archivos JSON automáticamente ===
+        if self.dataset_size == 300:
+            if meta_json == "WLASL_v0.3.json":
+                meta_json = "WLASL_v0.3_300.json"
+            if subset_json == "nslt_100.json":
+                subset_json = "nslt_300.json"
 
         # === Rutas completas ===
         self.base = base_path

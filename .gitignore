@@ -5,21 +5,26 @@ venv_gemini/
 .env
 
 # === Datos pesados ===
-data/
-dataset/
-datasets/
-videos/
+# Ignorar videos pero permitir estructura y JSONs
 *.mp4
 *.avi
 *.mkv
 *.mov
 
-# === Archivos WLASL ===
-data/wlasl100/
+# === Datasets WLASL ===
+# Ignorar videos y carpetas pesadas, pero mantener JSONs y estructura
 data/wlasl100/videos/
-data/wlasl100/dataset/
-data/wlasl100/splits/
-data/wlasl100/*.json
+data/wlasl100/dataset/train/*.mp4
+data/wlasl100/dataset/val/*.mp4
+data/wlasl100/dataset/test/*.mp4
+
+data/wlasl300/videos/
+data/wlasl300/dataset/train/*.mp4
+data/wlasl300/dataset/val/*.mp4
+data/wlasl300/dataset/test/*.mp4
+
+# Permitir archivos de splits (son pequeños)
+# Permitir archivos JSON de configuración
 
 # === Pesos de modelos ===
 models/
