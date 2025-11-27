@@ -1,6 +1,7 @@
 """
 Script para generar un reporte detallado del dataset WLASL100.
 Incluye estadísticas de glosas, videos por glosa, y distribución por split.
+CORREGIDO: Cuenta solo los videos que realmente existen en las carpetas locales.
 """
 
 import json
@@ -10,43 +11,29 @@ from collections import defaultdict, Counter
 # Rutas
 WLASL100_PATH = "data/wlasl100"
 NSLT_100_JSON = os.path.join(WLASL100_PATH, "nslt_100.json")
+WLASL_V03_JSON = os.path.join(WLASL100_PATH, "WLASL_v0.3.json")
+SPLITS_DIR = os.path.join(WLASL100_PATH, "splits")
 OUTPUT_FILE = "WLASL100_DATASET_REPORT.txt"
 
 print("=" * 80)
-print("Generando reporte detallado de WLASL100")
+print("Generando reporte detallado de WLASL100 (CORREGIDO)")
 print("=" * 80)
 
-# Cargar datos
-print("\n[1/4] Cargando archivos JSON...")
+# Cargar nslt_100.json para mapeo video_id -> class_id
+print("\n[1/5] Cargando archivos JSON...")
 with open(NSLT_100_JSON, 'r', encoding='utf-8') as f:
     nslt_data = json.load(f)
 
-print(f"   - Videos mapeados: {len(nslt_data)}")
+print(f"   - Videos en nslt_100.json: {len(nslt_data)}")
 
-# Crear mapeo de ID a glosa desde nslt_100.json
-# En nslt_100.json, la estructura es: {"video_id": {"subset": "train", "action": [class_id, ?, ?]}}
-# Necesitamos extraer las glosas únicas
-print("\n[2/4] Extrayendo glosas y creando mapeo...")
-
-# Primero, obtener todos los class_ids únicos
-class_ids = set()
-for video_id, info in nslt_data.items():
-    class_id = info['action'][0]
-    class_ids.add(class_id)
-
-# Crear un mapeo temporal (en wlasl100 no tenemos gloss_to_id.json explícito)
-# Vamos a extraer las glosas del WLASL_v0.3.json si existe
-wlasl_v03_path = os.path.join(WLASL100_PATH, "WLASL_v0.3.json")
+# Cargar WLASL_v0.3.json para mapeo class_id -> gloss
 id_to_gloss = {}
-
-if os.path.exists(wlasl_v03_path):
-    with open(wlasl_v03_path, 'r', encoding='utf-8') as f:
+if os.path.exists(WLASL_V03_JSON):
+    with open(WLASL_V03_JSON, 'r', encoding='utf-8') as f:
         wlasl_data = json.load(f)
 
-    # WLASL_v0.3.json tiene estructura: [{"gloss": "word", "instances": [...]}]
     for entry in wlasl_data:
         gloss = entry['gloss']
-        # Los instances tienen video_ids, buscar el primero para obtener el class_id
         if 'instances' in entry and len(entry['instances']) > 0:
             for instance in entry['instances']:
                 video_id = instance['video_id']
@@ -54,39 +41,56 @@ if os.path.exists(wlasl_v03_path):
                     class_id = nslt_data[video_id]['action'][0]
                     id_to_gloss[class_id] = gloss
                     break
-else:
-    # Si no existe WLASL_v0.3.json, usar IDs numéricos
-    for class_id in class_ids:
-        id_to_gloss[class_id] = f"class_{class_id}"
 
-print(f"   - Glosas únicas: {len(id_to_gloss)}")
+print(f"   - Glosas mapeadas: {len(id_to_gloss)}")
 
-# Análisis por glosa y split
-print("\n[3/4] Analizando distribución de videos...")
+# Leer archivos de splits para saber qué videos realmente existen
+print("\n[2/5] Leyendo archivos de splits...")
 
-# Estructura: glosa -> {'train': count, 'val': count, 'test': count, 'total': count}
+splits_data = {'train': [], 'val': [], 'test': []}
+
+for split in ['train', 'val', 'test']:
+    split_file = os.path.join(SPLITS_DIR, f"{split}_split.txt")
+    if os.path.exists(split_file):
+        with open(split_file, 'r', encoding='utf-8') as f:
+            # El formato es "train\00623.mp4" o similar
+            lines = [line.strip() for line in f if line.strip()]
+            splits_data[split] = lines
+            print(f"   - {split}: {len(lines)} videos")
+
+# Extraer solo los video IDs de los splits
+actual_videos = {}  # video_id -> split
+for split, lines in splits_data.items():
+    for line in lines:
+        # Extraer el nombre del archivo (ej: "train\00623.mp4" -> "00623.mp4")
+        filename = os.path.basename(line)
+        video_id = os.path.splitext(filename)[0]  # "00623"
+        actual_videos[video_id] = split
+
+print(f"   - Total videos locales: {len(actual_videos)}")
+
+# Análisis por glosa usando solo videos que existen localmente
+print("\n[3/5] Analizando distribución de videos...")
+
 gloss_stats = defaultdict(lambda: {'train': 0, 'val': 0, 'test': 0, 'total': 0})
-
-# Contadores por split
 split_counts = Counter()
 
-for video_id, info in nslt_data.items():
-    class_id = info['action'][0]
-    split = info['subset']
+for video_id, split in actual_videos.items():
+    if video_id in nslt_data:
+        class_id = nslt_data[video_id]['action'][0]
+        gloss = id_to_gloss.get(class_id, f"Unknown_{class_id}")
 
-    gloss = id_to_gloss.get(class_id, f"Unknown_{class_id}")
+        gloss_stats[gloss][split] += 1
+        gloss_stats[gloss]['total'] += 1
+        split_counts[split] += 1
 
-    gloss_stats[gloss][split] += 1
-    gloss_stats[gloss]['total'] += 1
-    split_counts[split] += 1
-
-print(f"   - Total videos procesados: {sum(split_counts.values())}")
+print(f"   - Glosas con videos: {len(gloss_stats)}")
 print(f"   - Train: {split_counts['train']}")
 print(f"   - Val: {split_counts['val']}")
 print(f"   - Test: {split_counts['test']}")
 
 # Ordenar glosas alfabéticamente
-print("\n[4/4] Ordenando estadísticas...")
+print("\n[4/5] Ordenando estadísticas...")
 sorted_glosses = sorted(gloss_stats.items(), key=lambda x: x[0])
 
 # Generar reporte
@@ -102,7 +106,7 @@ with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
     # Resumen general
     f.write("RESUMEN GENERAL\n")
     f.write("-" * 80 + "\n")
-    f.write(f"Total de Glosas (Clases):        100\n")
+    f.write(f"Total de Glosas (Clases):        {len(gloss_stats)}\n")
     f.write(f"Total de Videos:                 {sum(split_counts.values())}\n")
     f.write(f"  - Training:                    {split_counts['train']} ({split_counts['train']/sum(split_counts.values())*100:.1f}%)\n")
     f.write(f"  - Validation:                  {split_counts['val']} ({split_counts['val']/sum(split_counts.values())*100:.1f}%)\n")
@@ -169,6 +173,9 @@ with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
     f.write("Resolucion:       Variable (procesado a 224x224 en entrenamiento)\n")
     f.write("FPS:              Variable (muestreado a 16 frames por video)\n")
     f.write("\n")
+    f.write("Nota:             Este reporte cuenta solo los videos descargados\n")
+    f.write("                  localmente en data/wlasl100/dataset/\n")
+    f.write("\n")
     f.write("Estructura del dataset:\n")
     f.write("  data/wlasl100/\n")
     f.write("  ├── dataset/\n")
@@ -183,7 +190,7 @@ with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
     f.write("  └── WLASL_v0.3.json     # Metadata del dataset\n")
     f.write("\n")
     f.write("=" * 80 + "\n")
-    f.write("Generado por: scripts/generate_wlasl100_report.py\n")
+    f.write("Generado por: scripts/generate_wlasl100_report.py (CORREGIDO)\n")
     f.write("Proyecto: AtiendeSenas - Tesis UNAB\n")
     f.write("Autor: Rafael Ovalle\n")
     f.write("=" * 80 + "\n")
