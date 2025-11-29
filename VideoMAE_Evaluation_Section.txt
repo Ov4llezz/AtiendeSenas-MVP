@@ -1,0 +1,639 @@
+# ============================================================
+# SECCIÓN 5: EVALUACIÓN COMPLETA
+# ============================================================
+# Agrega estas celdas a tu notebook después de la sección de entrenamiento
+
+# ============================================================
+# Celda Markdown
+# ============================================================
+"""
+# 5️⃣ Evaluación Completa del Modelo
+
+## 5.1 Cargar Mejor Modelo
+"""
+
+# ============================================================
+# Celda Código
+# ============================================================
+print("[INFO] Cargando mejor modelo guardado...\\n")
+
+# Cargar checkpoint del mejor modelo
+best_model_path = f"{run_checkpoint_dir}/best_model.pt"
+checkpoint = torch.load(best_model_path, map_location=device)
+
+# Cargar estado del modelo
+model.load_state_dict(checkpoint['model_state_dict'])
+model.eval()
+
+print(f"✅ Modelo cargado desde: {best_model_path}")
+print(f"Epoch: {checkpoint['epoch']}")
+print(f"Val Loss: {checkpoint['val_loss']:.4f}")
+print(f"Val Acc: {checkpoint['val_acc']:.2f}%\\n")
+
+# ============================================================
+# Celda Markdown
+# ============================================================
+"""
+## 5.2 Funciones de Evaluación Detallada
+"""
+
+# ============================================================
+# Celda Código - Funciones de Evaluación
+# ============================================================
+@torch.no_grad()
+def evaluate_detailed(model, dataloader, device, num_classes):
+    \"\"\"
+    Evaluación detallada con todas las métricas.
+
+    Returns:
+        dict con predictions, labels, logits y métricas
+    \"\"\"
+    model.eval()
+
+    all_predictions = []
+    all_labels = []
+    all_logits = []
+
+    progress_bar = tqdm(dataloader, desc="Evaluación Detallada")
+
+    for videos, labels in progress_bar:
+        videos = videos.to(device)
+        labels = labels.to(device)
+
+        outputs = model(pixel_values=videos)
+        logits = outputs.logits
+
+        predictions = torch.argmax(logits, dim=1)
+
+        all_predictions.extend(predictions.cpu().numpy())
+        all_labels.extend(labels.cpu().numpy())
+        all_logits.append(logits.cpu())
+
+    # Concatenar logits
+    all_logits = torch.cat(all_logits, dim=0)
+    all_predictions = np.array(all_predictions)
+    all_labels = np.array(all_labels)
+
+    # ===== MÉTRICAS GENERALES =====
+    total_acc = accuracy_score(all_labels, all_predictions) * 100.0
+
+    # Precision, Recall, F1
+    precision_macro, recall_macro, f1_macro, _ = precision_recall_fscore_support(
+        all_labels, all_predictions, average='macro', zero_division=0
+    )
+    precision_weighted, recall_weighted, f1_weighted, _ = precision_recall_fscore_support(
+        all_labels, all_predictions, average='weighted', zero_division=0
+    )
+
+    # ===== TOP-K ACCURACY =====
+    logits_np = all_logits.numpy()
+    top_k_accuracies = {}
+
+    for k in [1, 3, 5]:
+        if k <= num_classes:
+            # Top-K predictions
+            top_k_preds = np.argsort(logits_np, axis=1)[:, -k:]
+            correct = np.array([label in preds for label, preds in zip(all_labels, top_k_preds)])
+            top_k_acc = correct.sum() / len(all_labels) * 100.0
+            top_k_accuracies[f'top_{k}'] = top_k_acc
+
+    # ===== MÉTRICAS POR CLASE =====
+    precision_per_class, recall_per_class, f1_per_class, support_per_class = precision_recall_fscore_support(
+        all_labels, all_predictions, average=None, zero_division=0, labels=range(num_classes)
+    )
+
+    # Accuracy por clase
+    conf_matrix = confusion_matrix(all_labels, all_predictions, labels=range(num_classes))
+    class_accuracies = []
+    for i in range(num_classes):
+        if support_per_class[i] > 0:
+            class_acc = conf_matrix[i, i] / support_per_class[i] * 100.0
+        else:
+            class_acc = 0.0
+        class_accuracies.append(class_acc)
+
+    return {
+        'predictions': all_predictions,
+        'labels': all_labels,
+        'logits': logits_np,
+        'confusion_matrix': conf_matrix,
+        'metrics': {
+            'total_accuracy': total_acc,
+            'precision_macro': precision_macro * 100.0,
+            'recall_macro': recall_macro * 100.0,
+            'f1_macro': f1_macro * 100.0,
+            'precision_weighted': precision_weighted * 100.0,
+            'recall_weighted': recall_weighted * 100.0,
+            'f1_weighted': f1_weighted * 100.0,
+            'top_k': top_k_accuracies,
+        },
+        'per_class': {
+            'accuracy': class_accuracies,
+            'precision': (precision_per_class * 100.0).tolist(),
+            'recall': (recall_per_class * 100.0).tolist(),
+            'f1': (f1_per_class * 100.0).tolist(),
+            'support': support_per_class.tolist()
+        }
+    }
+
+print("✅ Funciones de evaluación definidas")
+
+# ============================================================
+# Celda Markdown
+# ============================================================
+"""
+## 5.3 Evaluar en Test Set
+"""
+
+# ============================================================
+# Celda Código - Evaluar
+# ============================================================
+print(f"\\n{'='*70}")
+print(f"{'EVALUACIÓN EN TEST SET':^70}")
+print(f"{'='*70}\\n")
+
+# Evaluar
+test_results = evaluate_detailed(
+    model=model,
+    dataloader=test_loader,
+    device=device,
+    num_classes=CONFIG['num_classes']
+)
+
+# Mostrar resultados
+metrics = test_results['metrics']
+
+print(f"\\n{'='*70}")
+print(f"{'RESULTADOS GENERALES':^70}")
+print(f"{'='*70}")
+print(f"Total Accuracy:       {metrics['total_accuracy']:.2f}%")
+print(f"\\nPrecision (Macro):    {metrics['precision_macro']:.2f}%")
+print(f"Recall (Macro):       {metrics['recall_macro']:.2f}%")
+print(f"F1-Score (Macro):     {metrics['f1_macro']:.2f}%")
+print(f"\\nPrecision (Weighted): {metrics['precision_weighted']:.2f}%")
+print(f"Recall (Weighted):    {metrics['recall_weighted']:.2f}%")
+print(f"F1-Score (Weighted):  {metrics['f1_weighted']:.2f}%")
+print(f"\\n{'='*70}")
+print(f"{'TOP-K ACCURACIES':^70}")
+print(f"{'='*70}")
+for k, acc in metrics['top_k'].items():
+    print(f"{k.upper().replace('_', '-')}: {acc:.2f}%")
+print(f"{'='*70}\\n")
+
+# ============================================================
+# Celda Markdown
+# ============================================================
+"""
+## 5.4 Análisis por Clase - Top 10 Mejores
+"""
+
+# ============================================================
+# Celda Código - Top Mejores Clases
+# ============================================================
+# Obtener métricas por clase
+per_class = test_results['per_class']
+class_accs = np.array(per_class['accuracy'])
+class_support = np.array(per_class['support'])
+
+# Filtrar clases con muestras
+valid_classes = class_support > 0
+class_accs_valid = class_accs[valid_classes]
+class_ids_valid = np.arange(len(class_accs))[valid_classes]
+
+# Top 10 mejores
+sorted_indices = np.argsort(class_accs_valid)[::-1]
+top_10_best = sorted_indices[:10]
+
+print(f"{'='*80}")
+print(f"{'TOP 10 MEJORES CLASES':^80}")
+print(f"{'='*80}")
+print(f"{'Clase':<8} {'Acc(%)':<10} {'Prec(%)':<10} {'Rec(%)':<10} {'F1(%)':<10} {'Support':<10}")
+print("-" * 80)
+
+for idx in top_10_best:
+    class_id = class_ids_valid[idx]
+    print(f"{class_id:<8} "
+          f"{per_class['accuracy'][class_id]:<10.2f} "
+          f"{per_class['precision'][class_id]:<10.2f} "
+          f"{per_class['recall'][class_id]:<10.2f} "
+          f"{per_class['f1'][class_id]:<10.2f} "
+          f"{int(per_class['support'][class_id]):<10}")
+
+# ============================================================
+# Celda Markdown
+# ============================================================
+"""
+## 5.5 Análisis por Clase - Top 10 Peores
+"""
+
+# ============================================================
+# Celda Código - Top Peores Clases
+# ============================================================
+# Top 10 peores
+top_10_worst = sorted_indices[-10:][::-1]
+
+print(f"\\n{'='*80}")
+print(f"{'TOP 10 PEORES CLASES':^80}")
+print(f"{'='*80}")
+print(f"{'Clase':<8} {'Acc(%)':<10} {'Prec(%)':<10} {'Rec(%)':<10} {'F1(%)':<10} {'Support':<10}")
+print("-" * 80)
+
+for idx in top_10_worst:
+    class_id = class_ids_valid[idx]
+    print(f"{class_id:<8} "
+          f"{per_class['accuracy'][class_id]:<10.2f} "
+          f"{per_class['precision'][class_id]:<10.2f} "
+          f"{per_class['recall'][class_id]:<10.2f} "
+          f"{per_class['f1'][class_id]:<10.2f} "
+          f"{int(per_class['support'][class_id]):<10}")
+
+# ============================================================
+# Celda Markdown
+# ============================================================
+"""
+# 6️⃣ Visualizaciones
+
+## 6.1 Matriz de Confusión
+"""
+
+# ============================================================
+# Celda Código - Confusion Matrix
+# ============================================================
+def plot_confusion_matrix_top_n(conf_matrix, top_n=20, save_path=None):
+    \"\"\"
+    Genera heatmap de matriz de confusión.
+    Si hay muchas clases, muestra solo las top_n más frecuentes.
+    \"\"\"
+    num_classes = conf_matrix.shape[0]
+
+    # Si hay muchas clases, mostrar solo las más frecuentes
+    if num_classes > top_n:
+        class_totals = conf_matrix.sum(axis=1)
+        top_classes = np.argsort(class_totals)[-top_n:][::-1]
+        conf_matrix_subset = conf_matrix[np.ix_(top_classes, top_classes)]
+        title = f"Matriz de Confusión (Top {top_n} clases más frecuentes)"
+    else:
+        conf_matrix_subset = conf_matrix
+        top_classes = range(num_classes)
+        title = "Matriz de Confusión (Todas las clases)"
+
+    # Normalizar por fila (mostrar porcentajes)
+    conf_matrix_norm = conf_matrix_subset.astype('float') / conf_matrix_subset.sum(axis=1)[:, np.newaxis]
+    conf_matrix_norm = np.nan_to_num(conf_matrix_norm)
+
+    # Plot
+    plt.figure(figsize=(14, 12))
+    sns.heatmap(
+        conf_matrix_norm,
+        annot=False,
+        fmt='.2f',
+        cmap='Blues',
+        xticklabels=top_classes,
+        yticklabels=top_classes,
+        cbar_kws={'label': 'Proporción'}
+    )
+    plt.title(title, fontsize=14, fontweight='bold')
+    plt.xlabel('Clase Predicha', fontsize=12)
+    plt.ylabel('Clase Real', fontsize=12)
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"✅ Guardado: {save_path}")
+
+    plt.show()
+
+# Generar matriz de confusión
+cm_path = f"{CONFIG['results_dir']}/confusion_matrix_{timestamp}.png"
+plot_confusion_matrix_top_n(
+    test_results['confusion_matrix'],
+    top_n=30,
+    save_path=cm_path
+)
+
+# ============================================================
+# Celda Markdown
+# ============================================================
+"""
+## 6.2 Performance por Clase (Mejores vs Peores)
+"""
+
+# ============================================================
+# Celda Código - Class Performance
+# ============================================================
+def plot_class_performance(per_class_metrics, top_n=15, save_path=None):
+    \"\"\"Grafica las mejores y peores clases.\"\"\"
+
+    class_accs = np.array(per_class_metrics['accuracy'])
+    class_support = np.array(per_class_metrics['support'])
+
+    # Filtrar clases sin muestras
+    valid_classes = class_support > 0
+    class_accs_valid = class_accs[valid_classes]
+    class_ids_valid = np.arange(len(class_accs))[valid_classes]
+
+    # Top y Bottom N
+    sorted_indices = np.argsort(class_accs_valid)
+    bottom_indices = sorted_indices[:top_n]
+    top_indices = sorted_indices[-top_n:][::-1]
+
+    # Crear figura
+    fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+    # Top N mejores
+    top_classes = class_ids_valid[top_indices]
+    top_accs = class_accs_valid[top_indices]
+    colors_top = ['green' if acc >= 80 else 'yellowgreen' for acc in top_accs]
+
+    axes[0].barh(range(len(top_classes)), top_accs, color=colors_top, alpha=0.7)
+    axes[0].set_yticks(range(len(top_classes)))
+    axes[0].set_yticklabels([f"Clase {c}" for c in top_classes])
+    axes[0].set_xlabel('Accuracy (%)', fontsize=12)
+    axes[0].set_title(f'Top {len(top_classes)} Mejores Clases', fontsize=14, fontweight='bold')
+    axes[0].invert_yaxis()
+    axes[0].grid(axis='x', alpha=0.3)
+    axes[0].set_xlim([0, 105])
+
+    # Bottom N peores
+    bottom_classes = class_ids_valid[bottom_indices]
+    bottom_accs = class_accs_valid[bottom_indices]
+    colors_bottom = ['red' if acc < 50 else 'orange' for acc in bottom_accs]
+
+    axes[1].barh(range(len(bottom_classes)), bottom_accs, color=colors_bottom, alpha=0.7)
+    axes[1].set_yticks(range(len(bottom_classes)))
+    axes[1].set_yticklabels([f"Clase {c}" for c in bottom_classes])
+    axes[1].set_xlabel('Accuracy (%)', fontsize=12)
+    axes[1].set_title(f'Top {len(bottom_classes)} Peores Clases', fontsize=14, fontweight='bold')
+    axes[1].invert_yaxis()
+    axes[1].grid(axis='x', alpha=0.3)
+    axes[1].set_xlim([0, 105])
+
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"✅ Guardado: {save_path}")
+
+    plt.show()
+
+# Generar gráfico
+class_perf_path = f"{CONFIG['results_dir']}/class_performance_{timestamp}.png"
+plot_class_performance(
+    test_results['per_class'],
+    top_n=20,
+    save_path=class_perf_path
+)
+
+# ============================================================
+# Celda Markdown
+# ============================================================
+"""
+## 6.3 Distribución de Accuracy por Clase
+"""
+
+# ============================================================
+# Celda Código - Distribution
+# ============================================================
+# Histograma de accuracy por clase
+plt.figure(figsize=(12, 6))
+
+valid_accs = class_accs[class_support > 0]
+
+plt.hist(valid_accs, bins=20, color='skyblue', edgecolor='black', alpha=0.7)
+plt.axvline(valid_accs.mean(), color='red', linestyle='--', linewidth=2, label=f'Media: {valid_accs.mean():.2f}%')
+plt.axvline(np.median(valid_accs), color='green', linestyle='--', linewidth=2, label=f'Mediana: {np.median(valid_accs):.2f}%')
+
+plt.xlabel('Accuracy (%)', fontsize=12)
+plt.ylabel('Número de Clases', fontsize=12)
+plt.title('Distribución de Accuracy por Clase', fontsize=14, fontweight='bold')
+plt.legend(fontsize=11)
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+
+dist_path = f"{CONFIG['results_dir']}/accuracy_distribution_{timestamp}.png"
+plt.savefig(dist_path, dpi=300, bbox_inches='tight')
+plt.show()
+
+print(f"✅ Guardado: {dist_path}")
+
+# ============================================================
+# Celda Markdown
+# ============================================================
+"""
+## 6.4 Métricas por Umbral de Support
+"""
+
+# ============================================================
+# Celda Código - Métricas por Support
+# ============================================================
+# Analizar performance según cantidad de muestras
+support_bins = [0, 5, 10, 20, 50, 100, 1000]
+support_labels = ['0-5', '6-10', '11-20', '21-50', '51-100', '100+']
+
+bin_stats = []
+for i in range(len(support_bins)-1):
+    mask = (class_support >= support_bins[i]) & (class_support < support_bins[i+1])
+    if i == len(support_bins) - 2:  # Último bin
+        mask = class_support >= support_bins[i]
+
+    if mask.sum() > 0:
+        avg_acc = class_accs[mask].mean()
+        count = mask.sum()
+    else:
+        avg_acc = 0
+        count = 0
+
+    bin_stats.append({
+        'range': support_labels[i] if i < len(support_labels) else support_labels[-1],
+        'avg_accuracy': avg_acc,
+        'num_classes': count
+    })
+
+# Crear gráfico
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+# Accuracy promedio por bin
+ranges = [s['range'] for s in bin_stats]
+accs = [s['avg_accuracy'] for s in bin_stats]
+counts = [s['num_classes'] for s in bin_stats]
+
+ax1.bar(ranges, accs, color='steelblue', alpha=0.7)
+ax1.set_xlabel('Número de Muestras por Clase', fontsize=12)
+ax1.set_ylabel('Accuracy Promedio (%)', fontsize=12)
+ax1.set_title('Accuracy Promedio según Número de Muestras', fontsize=14, fontweight='bold')
+ax1.grid(axis='y', alpha=0.3)
+ax1.set_ylim([0, 100])
+
+# Número de clases por bin
+ax2.bar(ranges, counts, color='coral', alpha=0.7)
+ax2.set_xlabel('Número de Muestras por Clase', fontsize=12)
+ax2.set_ylabel('Número de Clases', fontsize=12)
+ax2.set_title('Distribución de Clases según Número de Muestras', fontsize=14, fontweight='bold')
+ax2.grid(axis='y', alpha=0.3)
+
+plt.tight_layout()
+
+support_path = f"{CONFIG['results_dir']}/support_analysis_{timestamp}.png"
+plt.savefig(support_path, dpi=300, bbox_inches='tight')
+plt.show()
+
+print(f"✅ Guardado: {support_path}")
+
+# ============================================================
+# Celda Markdown
+# ============================================================
+"""
+# 7️⃣ Exportación de Resultados
+
+## 7.1 Guardar Resultados Completos
+"""
+
+# ============================================================
+# Celda Código - Exportar Resultados
+# ============================================================
+print("[INFO] Exportando resultados completos...\\n")
+
+# Preparar datos para exportación
+export_data = {
+    'timestamp': timestamp,
+    'configuration': CONFIG,
+    'training': {
+        'best_epoch': int(checkpoint['epoch']),
+        'best_val_loss': float(checkpoint['val_loss']),
+        'best_val_acc': float(checkpoint['val_acc']),
+        'total_epochs_trained': len(training_history),
+    },
+    'test_metrics': {
+        'total_accuracy': float(metrics['total_accuracy']),
+        'precision_macro': float(metrics['precision_macro']),
+        'recall_macro': float(metrics['recall_macro']),
+        'f1_macro': float(metrics['f1_macro']),
+        'precision_weighted': float(metrics['precision_weighted']),
+        'recall_weighted': float(metrics['recall_weighted']),
+        'f1_weighted': float(metrics['f1_weighted']),
+        'top_k_accuracies': {k: float(v) for k, v in metrics['top_k'].items()},
+    },
+    'per_class_metrics': test_results['per_class'],
+    'class_analysis': {
+        'mean_accuracy': float(valid_accs.mean()),
+        'median_accuracy': float(np.median(valid_accs)),
+        'std_accuracy': float(valid_accs.std()),
+        'min_accuracy': float(valid_accs.min()),
+        'max_accuracy': float(valid_accs.max()),
+    }
+}
+
+# Guardar JSON completo
+json_path = f"{CONFIG['results_dir']}/complete_results_{timestamp}.json"
+with open(json_path, 'w') as f:
+    json.dump(export_data, f, indent=2)
+print(f"✅ JSON guardado: {json_path}")
+
+# Guardar reporte TXT
+txt_path = f"{CONFIG['results_dir']}/report_{timestamp}.txt"
+with open(txt_path, 'w') as f:
+    f.write("="*80 + "\\n")
+    f.write(f"{'REPORTE COMPLETO - VIDEOMARE WLASL':^80}\\n")
+    f.write("="*80 + "\\n\\n")
+
+    f.write(f"Fecha: {timestamp}\\n")
+    f.write(f"Dataset: {DATASET_TYPE.upper()} ({NUM_CLASSES} clases)\\n")
+    f.write(f"Versión: {VERSION.upper()}\\n")
+    f.write(f"Dataset Name: {DATASET_NAME}\\n\\n")
+
+    f.write("="*80 + "\\n")
+    f.write("CONFIGURACIÓN DE ENTRENAMIENTO\\n")
+    f.write("="*80 + "\\n\\n")
+    f.write(f"Batch Size: {CONFIG['batch_size']}\\n")
+    f.write(f"Learning Rate: {CONFIG['lr']:.2e}\\n")
+    f.write(f"Weight Decay: {CONFIG['weight_decay']}\\n")
+    f.write(f"Label Smoothing: {CONFIG['label_smoothing']}\\n")
+    f.write(f"Class Weighted: {CONFIG['class_weighted']}\\n")
+    f.write(f"Patience: {CONFIG['patience']}\\n")
+    f.write(f"Max Epochs: {CONFIG['max_epochs']}\\n\\n")
+
+    f.write("="*80 + "\\n")
+    f.write("RESULTADOS DE ENTRENAMIENTO\\n")
+    f.write("="*80 + "\\n\\n")
+    f.write(f"Mejor Epoch: {checkpoint['epoch']}\\n")
+    f.write(f"Val Loss: {checkpoint['val_loss']:.4f}\\n")
+    f.write(f"Val Accuracy: {checkpoint['val_acc']:.2f}%\\n")
+    f.write(f"Total Epochs: {len(training_history)}\\n\\n")
+
+    f.write("="*80 + "\\n")
+    f.write("RESULTADOS EN TEST SET\\n")
+    f.write("="*80 + "\\n\\n")
+    f.write(f"Total Accuracy:       {metrics['total_accuracy']:.2f}%\\n\\n")
+    f.write(f"Precision (Macro):    {metrics['precision_macro']:.2f}%\\n")
+    f.write(f"Recall (Macro):       {metrics['recall_macro']:.2f}%\\n")
+    f.write(f"F1-Score (Macro):     {metrics['f1_macro']:.2f}%\\n\\n")
+    f.write(f"Precision (Weighted): {metrics['precision_weighted']:.2f}%\\n")
+    f.write(f"Recall (Weighted):    {metrics['recall_weighted']:.2f}%\\n")
+    f.write(f"F1-Score (Weighted):  {metrics['f1_weighted']:.2f}%\\n\\n")
+
+    f.write("="*80 + "\\n")
+    f.write("TOP-K ACCURACIES\\n")
+    f.write("="*80 + "\\n\\n")
+    for k, acc in metrics['top_k'].items():
+        f.write(f"{k.upper().replace('_', '-')}: {acc:.2f}%\\n")
+
+    f.write("\\n" + "="*80 + "\\n")
+    f.write("ANÁLISIS POR CLASE\\n")
+    f.write("="*80 + "\\n\\n")
+    f.write(f"Accuracy Media:    {valid_accs.mean():.2f}%\\n")
+    f.write(f"Accuracy Mediana:  {np.median(valid_accs):.2f}%\\n")
+    f.write(f"Desv. Estándar:    {valid_accs.std():.2f}%\\n")
+    f.write(f"Accuracy Mínima:   {valid_accs.min():.2f}%\\n")
+    f.write(f"Accuracy Máxima:   {valid_accs.max():.2f}%\\n")
+
+print(f"✅ TXT guardado: {txt_path}")
+
+# Guardar predicciones
+predictions_df = pd.DataFrame({
+    'true_label': test_results['labels'],
+    'predicted_label': test_results['predictions'],
+    'correct': test_results['labels'] == test_results['predictions']
+})
+pred_path = f"{CONFIG['results_dir']}/predictions_{timestamp}.csv"
+predictions_df.to_csv(pred_path, index=False)
+print(f"✅ Predicciones guardadas: {pred_path}")
+
+# Resumen de archivos generados
+print(f"\\n{'='*80}")
+print(f"{'ARCHIVOS GENERADOS':^80}")
+print(f"{'='*80}")
+print(f"Checkpoints:         {run_checkpoint_dir}")
+print(f"Logs TensorBoard:    {log_dir}")
+print(f"JSON completo:       {json_path}")
+print(f"Reporte TXT:         {txt_path}")
+print(f"Predicciones CSV:    {pred_path}")
+print(f"Curvas entrenamiento: {curves_path}")
+print(f"Matriz confusión:    {cm_path}")
+print(f"Performance clases:  {class_perf_path}")
+print(f"Distribución acc:    {dist_path}")
+print(f"Análisis support:    {support_path}")
+print(f"{'='*80}\\n")
+
+print("✅ ¡EVALUACIÓN COMPLETA FINALIZADA!")
+
+# ============================================================
+# Celda Markdown
+# ============================================================
+"""
+# 8️⃣ Cargar en TensorBoard (Opcional)
+
+Para visualizar los logs de entrenamiento en TensorBoard:
+"""
+
+# ============================================================
+# Celda Código - TensorBoard
+# ============================================================
+# Cargar extensión de TensorBoard
+%load_ext tensorboard
+
+# Lanzar TensorBoard
+%tensorboard --logdir {CONFIG['logs_dir']}
+
+# ============================================================
+# FIN DEL NOTEBOOK
+# ============================================================
