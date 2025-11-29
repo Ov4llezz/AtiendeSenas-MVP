@@ -205,13 +205,33 @@ def train_model(config, train_loader, val_loader, train_dataset):
         num_labels=config['num_classes'],
         ignore_mismatched_sizes=True
     )
+
+    # === Configurar capas entrenables ===
+    freeze_backbone = config.get('freeze_backbone', False)
+
+    if freeze_backbone:
+        # Congelar backbone, solo entrenar clasificador
+        for name, param in model.named_parameters():
+            if 'classifier' not in name:
+                param.requires_grad = False
+        print("⚠️  BACKBONE CONGELADO - Solo clasificador entrenable")
+    else:
+        # Todas las capas entrenables (por defecto)
+        for param in model.parameters():
+            param.requires_grad = True
+        print("✅ TODAS las 12 capas del modelo VideoMAE son entrenables")
+
     model.to(device)
 
+    # Contar parámetros
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    frozen_params = total_params - trainable_params
+
     print(f"Modelo: {config['model_name']}")
     print(f"Parámetros totales: {total_params:,}")
-    print(f"Parámetros entrenables: {trainable_params:,}\\n")
+    print(f"Parámetros entrenables: {trainable_params:,}")
+    print(f"Parámetros congelados: {frozen_params:,}\\n")
 
     # Class weights
     class_weights = None

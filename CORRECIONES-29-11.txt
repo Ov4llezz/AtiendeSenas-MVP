@@ -1,0 +1,215 @@
+Quiero que me ayudes a actualizar y ordenar mi proyecto, usando un flujo basado en notebooks muy limpios + scripts Python externos.
+
+### 0. Contexto general
+
+- Proyecto: AtiendeSeñas – Reconocimiento de LSCh con VideoMAE.
+- Notebook principal actual: `notebook_corregido.ipynb`.
+- Notebook de referencia a nivel de estilo/estructura: `colab_v1.ipynb`.
+- Tengo además varios scripts Python organizados en carpetas tipo `colab_utils/` y una carpeta nueva `scriptsv2/` con scripts más recientes (creados por Claude en iteraciones anteriores).
+
+Mi objetivo es que el notebook final sea:
+
+- Minimalista y limpio (como `colab_v1`): el notebook solo tiene celdas de configuración y “llamadas” a funciones; toda la lógica pesada está en scripts Python.
+- Capaz de:
+  - Entrenar modelos (full run y “prueba rápida”).
+  - Evaluar modelos (en distintos datasets y checkpoints).
+  - Alternar fácilmente entre varios datasets (v1 y v2).
+  - Configurar hiperparámetros clave desde UNA sola sección de configuración en el notebook.
+
+### 1. Entorno de ejecución (IMPORTANTE)
+
+Antes entrenaba en Google Colab con Drive montado.  
+Ahora:
+
+- El código se ejecuta en una **VM con GPU en Google Cloud**.
+- El notebook se conecta a esa VM (Colab cree que es “local”, pero en realidad se ejecuta en la VM).
+- Los datasets y el repo están almacenados en la VM, NO en mi PC ni en Drive.
+**esto anterior ya lo tengo configurado con exito**
+
+Por lo tanto:
+
+- No quiero que el notebook dependa de `/content/drive` ni montajes de Google Drive.
+- La ruta base de datos ahora es:
+
+  - `DATA_ROOT = "/home/ov4lle/AtiendeSenas-MVP/data"`
+
+- El repositorio del código está en algo como:
+
+  - `/home/ov4lle/AtiendeSenas-MVP/` (puedes detectar la ruta real si hace falta, pero asume ese path).
+
+
+### 2. Datasets disponibles
+
+Tengo 4 variantes de datasets (para WLASL100 y WLASL300):
+
+1. **v1 (baseline)** – estructura clásica con train/val/test separados:
+   - `data/wlasl100/dataset/train`
+   - `data/wlasl100/dataset/val`
+   - `data/wlasl100/dataset/test`
+   - `data/wlasl300/dataset/train`
+   - `data/wlasl300/dataset/val`
+   - `data/wlasl300/dataset/test`
+
+2. **v2 (experimental)** – mismos videos, pero con `train + val` combinados para tener más datos de entrenamiento. La idea básica es:
+   - `data/wlasl100_v2/...` → combina train+val para entrenar. (entregame ambos ya combinados, modifica los v2 existentes)
+   - `data/wlasl300_v2/...` → combina train+val para entrenar.
+
+(La nomenclatura exacta de carpetas puede variar, pero la idea es esa. Busca dónde se están verificando `wlasl100_v2` y `wlasl300_v2` en el código actual y hazlo consistente.)
+
+Quiero poder elegir desde el notebook:
+
+- `DATASET_TYPE`: `"wlasl100"` o `"wlasl300"`
+- `VERSION`: `"v1"` o `"v2"`
+
+Y que internamente se configure bien:
+
+- Rutas correctas.
+- Uso o no de train+val combinado.
+- Uso del split de test.
+- json adaptados a los nuevos v2
+- Usar test como validation y también como test final (solo en v2)
+- MANTENER estructura de dataset y json de V1 (train, val y test por separados)
+
+### 3. Notebook actual y qué debes modificar
+
+En `notebook_corregido.ipynb` ya hice correcciones en la **sección 1 (Configuración inicial, clonar repo, instalar deps, etc.)** para que todo funcione con el entorno local de la VM.  
+Quiero que:
+
+- **Mantengas todo lo de la sección 1 tal como está** (o lo toques solo si es estrictamente necesario).
+- A partir de la sección `## 2️⃣ Verificar Datasets` y hacia abajo, revises y actualices TODO lo que haga falta.
+
+En concreto, quiero que:
+
+1. **Verificación de datasets (sección 2)**  
+   - Actualiza la función que verifica datasets para que:
+     - Compruebe la existencia de los 4 datasets: `wlasl100`, `wlasl300`, `wlasl100_v2`, `wlasl300_v2`.
+     - Imprima un resumen claro por split y un total de videos.
+     - Use rutas relativas a `DATA_ROOT` (no a Drive).
+   - Si ya hay una función `verificar_dataset(...)` que recorre `train/val/test`, extiéndela para soportar también las variantes v2 según la organización real del disco.
+
+2. **Configuración del experimento (sección 3)**  
+   - Ahora mismo hay una celda tipo:
+     ```python
+     from colab_utils.config import create_config, print_config, save_config
+
+     DATASET_TYPE = "wlasl100"
+     VERSION = "v1"
+
+     config = create_config(
+         dataset_type=DATASET_TYPE,
+         version=VERSION,
+         drive_root=DRIVE_ROOT
+     )
+     ```
+   - Quiero que:
+     - `create_config` ya NO use `drive_root`, sino algo como `data_root=DATA_ROOT`.
+     - Se centralice en `config` toda la información necesaria (dataset, paths, hiperparámetros, etc.).
+     - Mantengas el estilo limpio: una sola celda donde yo pueda configurar todo.
+
+### 4. Hiperparámetros y cambios obligatorios
+
+Además de la parte de datasets, quiero que actualices la pipeline de entrenamiento (scripts + notebook) para que cumpla las siguientes condiciones por defecto (y que sean **configurables desde el notebook**):
+
+1. **Sampling de frames**
+   - Frame sampling debe ser **uniforme** a lo largo del video (no consecutivo aleatorio).
+   - Es decir: si se toman N frames, deben estar espaciados de manera uniforme desde el inicio al final del video.
+   - Si actualmente se usa un clip consecutivo o frames aleatorios (`random.randint`, `np.random`, etc.), reemplázalo por una función de sampling uniforme (ej. usando `np.linspace` sobre el índice de frames).
+
+2. **Batch size**
+   - Valor por defecto: `batch_size = 6`.
+
+3. **Máximo de epochs**
+   - Valor por defecto: `max_epochs = 30`.
+
+4. **Learning rate inicial**
+   - Valor por defecto: `learning_rate = 1e-5`.
+
+5. **Early stopping**
+   - Patience para early stopping: `patience = 10` epochs sin mejora.
+   - Asegúrate de que early stopping esté correctamente integrado en el loop de entrenamiento (si ya existe, solo ajusta los valores; si no existe, implementa un mecanismo sencillo basado en la métrica de validación).
+
+6. **Weight decay**
+   - Debe estar en `0.0` (desactivado) por defecto.
+
+7. **Label smoothing**
+   - Debe ser `0.0` (desactivado) por defecto.
+
+8. **Class weighting**
+   - Debe estar desactivado **por defecto**; es decir, no aplicar pesos a las clases en la función de pérdida, a menos que yo cambie un flag en la config.
+
+9. **Capas entrenables**
+   - Todas las 12 capas del modelo base (VideoMAE) deben ser entrenables.
+   - Si en algún script se congelan capas (por ejemplo, solo entrenar las últimas 3, o se hace `requires_grad = False` en parte del backbone), elimina ese comportamiento por defecto.
+   - Deja, si quieres, un flag en `config` para “congelar_backbone = False`” o similar, pero por defecto tiene que entrenarse TODO el modelo.
+
+
+Todos estos hiperparámetros deben:
+
+- Estar definidos en la celda de configuración del notebook (`CONFIGURA TU EXPERIMENTO AQUÍ`).
+- Ser pasados al diccionario `config` mediante `create_config`.
+- Ser utilizados dentro de los scripts de entrenamiento/evaluación correspondientes (`colab_utils/training.py`, `colab_utils/datasets.py`, `scriptsv2`, etc.).
+
+### 5. Organización del código (scripts vs notebook)
+
+Por favor:
+
+- Mantén la filosofía de `colab_v1`:
+  - El notebook solo orquesta: configuración, llamadas a funciones, prints importantes.
+  - Toda la lógica compleja va a módulos Python en carpetas (`colab_utils/`, `scriptsv2/`, etc.).
+- Si necesitas crear nuevos scripts o refactorizar los existentes:
+  - Hazlo en `scriptsv2` (o en la estructura que veas más lógica), pero mantén un orden claro.
+  - Documenta con comentarios en el código qué hace cada función importante.
+- Asegúrate de que en el notebook:
+  - Haya secciones claras para:
+    1. Configuración inicial / entorno (ya está, solo ajustar si hace falta).
+    2. Verificación de datasets.
+    3. Configuración del experimento (dataset, versión, hiperparámetros).
+    4. Entrenamiento estándar.
+    5. Entrenamiento rápido (1–2 epochs) solo para pruebas.
+    6. Evaluación de modelos / checkpoints.
+    7. Visualización de resultados (curvas, métricas) (todas las necesarias para presentar tesis).
+    8. Utilidades (GPU, limpieza de memoria, etc., como en `colab_v1`).
+
+### 6. Qué quiero que produzcas exactamente
+
+1. **Actualiza `notebook_corregido.ipynb`**:
+   - Mantén todo lo de la sección 1 (clonado, instalación, etc.) tal como está, salvo ajustes menores necesarios.
+   - A partir de la sección 2:
+     - Actualiza/verifica la celda de “Verificar datasets”.
+     - Actualiza la celda de “Configurar experimento” para usar `DATA_ROOT` y los nuevos hiperparámetros.
+     - Asegúrate de que las celdas de entrenamiento, evaluación y utilidades llamen a las funciones correctas de los scripts actualizados.
+
+2. **Actualiza/crea scripts Python necesarios**, en especial:
+   - El módulo de configuración (`colab_utils/config.py` o equivalente) para que:
+     - Acepte `data_root` en lugar de `drive_root`.
+     - Genere un diccionario `config` con todos los campos necesarios (paths + hiperparámetros).
+   - El módulo de datasets (`colab_utils/datasets.py` o equivalente) para implementar:
+     - Sampling uniforme de frames.
+     - Lógica de selección de dataset según `DATASET_TYPE` y `VERSION`.
+   - El módulo de entrenamiento (`colab_utils/training.py` o el que corresponda) para:
+     - Usar los nuevos hiperparámetros (batch_size, lr, max_epochs, patience, weight_decay, label_smoothing, etc.).
+     - Asegurar que TODAS las capas del modelo son entrenables por defecto.
+     - Integrar correctamente early stopping.
+   - El módulo de evaluación (`colab_utils/eval.py` o similar) para:
+     - Evaluar modelos en el split adecuado según la config.
+
+3. **Limpieza general**:
+   - Elimina cualquier referencia residual a `/content/drive` o a Google Drive.
+   - Deja las rutas basadas en `DATA_ROOT` y en rutas relativas dentro del repo.
+   - Añade comentarios claros en el notebook y scripts en español para que yo pueda entender la lógica sin repasar todo el código.
+
+Cuando termines, asegúrate de que:
+
+- El notebook se pueda ejecutar de arriba hacia abajo en la VM sin errores.
+- Pueda cambiar fácilmente:
+  - `DATASET_TYPE` (`"wlasl100"` o `"wlasl300"`).
+  - `VERSION` (`"v1"` o `"v2"`).
+  - Hiperparámetros clave (batch_size, epochs, lr, etc.) desde una sola celda.
+- Pueda lanzar:
+  - Un entrenamiento completo.
+  - Una prueba rápida de 1–2 epochs para validar que todo funciona.
+  - Una evaluación de un modelo entrenado sobre el dataset correspondiente.
+
+Por favor, trabaja directamente sobre los archivos del repo (`notebook_corregido.ipynb`, `colab_utils/*`, `scriptsv2/*`) y muéstrame los diffs o el código actualizado relevante.
+
+**NOTA:la combinacion de train+val, es solo cuando elijo la V2, de cualquier dataset

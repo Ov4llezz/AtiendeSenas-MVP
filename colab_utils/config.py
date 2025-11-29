@@ -33,21 +33,60 @@ def setup_environment():
     print("✅ Dependencies installed\n")
 
 
-def create_config(dataset_type="wlasl100", version="v1", drive_root="/content/drive/MyDrive/TESIS_WLASL"):
+def create_config(
+    dataset_type="wlasl100",
+    version="v1",
+    data_root="/home/ov4lle/AtiendeSenas-MVP/data",
+
+    # === HIPERPARÁMETROS CONFIGURABLES ===
+    # Valores por defecto: aplicables tanto a V1 como V2
+    batch_size=6,
+    max_epochs=30,
+    learning_rate=1e-5,
+    patience=10,
+    weight_decay=0.0,
+    label_smoothing=0.0,
+    class_weighted=False,
+    freeze_backbone=False,
+
+    # === OTROS PARÁMETROS ===
+    warmup_ratio=0.1,
+    min_lr=1e-6,
+    gradient_clip=1.0,
+    num_workers=2,
+    save_every=5,
+):
     """
-    Create configuration dictionary based on dataset and version.
+    Crea configuración para entrenamiento de VideoMAE en WLASL.
 
     Args:
-        dataset_type: "wlasl100" or "wlasl300"
-        version: "v1" (baseline) or "v2" (experimental)
-        drive_root: Root directory in Google Drive
+        dataset_type: "wlasl100" o "wlasl300"
+        version: "v1" (train/val/test separados) o "v2" (train+val combinados)
+        data_root: Ruta base donde están los datasets (default: VM path)
+
+        # Hiperparámetros (GENERALES para V1 y V2)
+        batch_size: Tamaño del batch (default: 6)
+        max_epochs: Número máximo de epochs (default: 30)
+        learning_rate: Learning rate inicial (default: 1e-5)
+        patience: Epochs sin mejora para early stopping (default: 10)
+        weight_decay: Regularización L2 (default: 0.0 = desactivado)
+        label_smoothing: Label smoothing (default: 0.0 = desactivado)
+        class_weighted: Usar pesos de clases en pérdida (default: False)
+        freeze_backbone: Congelar backbone VideoMAE (default: False = entrenar todo)
+
+        # Otros parámetros
+        warmup_ratio: Porcentaje de warmup (default: 0.1)
+        min_lr: Learning rate mínimo (default: 1e-6)
+        gradient_clip: Gradient clipping (default: 1.0)
+        num_workers: Workers para DataLoader (default: 2)
+        save_every: Guardar checkpoint cada N epochs (default: 5)
 
     Returns:
-        Configuration dictionary
+        Diccionario de configuración completo
     """
     import torch
 
-    # Determine num_classes and dataset_name
+    # Determinar número de clases y nombre del dataset
     if dataset_type == "wlasl100":
         num_classes = 100
         dataset_name = "wlasl100_v2" if version == "v2" else "wlasl100"
@@ -55,60 +94,54 @@ def create_config(dataset_type="wlasl100", version="v1", drive_root="/content/dr
         num_classes = 300
         dataset_name = "wlasl300_v2" if version == "v2" else "wlasl300"
     else:
-        raise ValueError("dataset_type must be 'wlasl100' or 'wlasl300'")
+        raise ValueError("dataset_type debe ser 'wlasl100' o 'wlasl300'")
 
-    # Base configuration
+    # Validar versión
+    if version not in ["v1", "v2"]:
+        raise ValueError("version debe ser 'v1' o 'v2'")
+
+    # Configuración completa
     config = {
+        # Modelo
         "model_name": "MCG-NJU/videomae-base-finetuned-kinetics",
         "num_classes": num_classes,
         "dataset_name": dataset_name,
         "dataset_type": dataset_type,
         "version": version,
         "device": "cuda" if torch.cuda.is_available() else "cpu",
+
+        # Hiperparámetros (GENERALES, no específicos por versión)
+        "batch_size": batch_size,
+        "max_epochs": max_epochs,
+        "lr": learning_rate,
+        "weight_decay": weight_decay,
+        "label_smoothing": label_smoothing,
+        "class_weighted": class_weighted,
+        "patience": patience,
+        "freeze_backbone": freeze_backbone,
+
+        # Scheduler y optimización
+        "warmup_ratio": warmup_ratio,
+        "min_lr": min_lr,
+        "gradient_clip": gradient_clip,
+
+        # DataLoader
+        "num_workers": num_workers,
+
+        # Checkpointing
+        "save_every": save_every,
     }
 
-    # Version-specific hyperparameters
-    if version == "v1":
-        config.update({
-            "batch_size": 16,
-            "max_epochs": 30,
-            "lr": 1e-4,
-            "weight_decay": 0.05,
-            "label_smoothing": 0.1,
-            "class_weighted": True,
-            "patience": 5,
-        })
-    elif version == "v2":
-        config.update({
-            "batch_size": 6,
-            "max_epochs": 30,
-            "lr": 1e-5,
-            "weight_decay": 0.0,
-            "label_smoothing": 0.0,
-            "class_weighted": False,
-            "patience": 10,
-        })
-    else:
-        raise ValueError("version must be 'v1' or 'v2'")
-
-    # Common hyperparameters
+    # Rutas (basadas en data_root, NO drive_root)
+    # La estructura es: /home/ov4lle/AtiendeSenas-MVP/data/{dataset_name}
     config.update({
-        "warmup_ratio": 0.1,
-        "min_lr": 1e-6,
-        "gradient_clip": 1.0,
-        "num_workers": 2,
-        "save_every": 5,
+        "data_root": f"{data_root}/{dataset_name}",
+        "checkpoint_dir": f"{data_root}/../models/{version}/{dataset_name}/checkpoints",
+        "logs_dir": f"{data_root}/../runs/{version}/{dataset_name}",
+        "results_dir": f"{data_root}/../results/{version}/{dataset_name}",
     })
 
-    # Paths
-    config.update({
-        "data_root": f"{drive_root}/data/{dataset_name}",
-        "checkpoint_dir": f"{drive_root}/models/{version}/{dataset_name}/checkpoints",
-        "logs_dir": f"{drive_root}/runs/{version}/{dataset_name}",
-        "results_dir": f"{drive_root}/results/{version}/{dataset_name}",
-    })
-
-    # Create directories
+    # Crear directorios si no existen
     for key in ["checkpoint_dir", "logs_dir", "results_dir"]:
         os.makedirs(config[key], exist_ok=True)
 
@@ -117,7 +150,7 @@ def create_config(dataset_type="wlasl100", version="v1", drive_root="/content/dr
 
 def print_config(config):
     """
-    Print configuration in a nice format.
+    Imprime la configuración en formato legible.
     """
     print(f"\\n{'='*70}")
     print(f"{'CONFIGURACIÓN DEL EXPERIMENTO':^70}")
@@ -125,20 +158,36 @@ def print_config(config):
     print(f"Dataset: {config['dataset_type'].upper()} ({config['num_classes']} clases)")
     print(f"Versión: {config['version'].upper()}")
     print(f"Dataset Name: {config['dataset_name']}")
-    print(f"\\nHiperparámetros:")
-    print(f"  - Batch Size: {config['batch_size']}")
-    print(f"  - Learning Rate: {config['lr']:.2e}")
-    print(f"  - Weight Decay: {config['weight_decay']}")
-    print(f"  - Label Smoothing: {config['label_smoothing']}")
-    print(f"  - Class Weighted: {config['class_weighted']}")
-    print(f"  - Patience: {config['patience']}")
-    print(f"  - Max Epochs: {config['max_epochs']}")
-    print(f"\\nRutas:")
-    print(f"  - Data: {config['data_root']}")
-    print(f"  - Checkpoints: {config['checkpoint_dir']}")
-    print(f"  - Logs: {config['logs_dir']}")
-    print(f"  - Results: {config['results_dir']}")
-    print(f"\\nDevice: {config['device']}")
+
+    print(f"\\n{'Hiperparámetros Principales':─^70}")
+    print(f"  Batch Size:         {config['batch_size']}")
+    print(f"  Max Epochs:         {config['max_epochs']}")
+    print(f"  Learning Rate:      {config['lr']:.2e}")
+    print(f"  Patience (E.Stop):  {config['patience']} epochs")
+
+    print(f"\\n{'Regularización':─^70}")
+    print(f"  Weight Decay:       {config['weight_decay']}")
+    print(f"  Label Smoothing:    {config['label_smoothing']}")
+    print(f"  Class Weighted:     {config['class_weighted']}")
+
+    print(f"\\n{'Modelo':─^70}")
+    print(f"  Freeze Backbone:    {config.get('freeze_backbone', False)}")
+    print(f"  Gradient Clip:      {config['gradient_clip']}")
+
+    print(f"\\n{'Scheduler':─^70}")
+    print(f"  Warmup Ratio:       {config['warmup_ratio']}")
+    print(f"  Min LR:             {config['min_lr']:.2e}")
+
+    print(f"\\n{'Rutas':─^70}")
+    print(f"  Data:        {config['data_root']}")
+    print(f"  Checkpoints: {config['checkpoint_dir']}")
+    print(f"  Logs:        {config['logs_dir']}")
+    print(f"  Results:     {config['results_dir']}")
+
+    print(f"\\n{'Sistema':─^70}")
+    print(f"  Device:             {config['device']}")
+    print(f"  Num Workers:        {config['num_workers']}")
+    print(f"  Save Every:         {config['save_every']} epochs")
     print(f"{'='*70}\\n")
 
 

@@ -118,8 +118,23 @@ class WLASLVideoDataset(Dataset):
 
         # === Rutas completas ===
         self.base = base_path
-        self.videos_dir = os.path.join(base_path, videos_folder, split)
         self.splits_dir = os.path.join(base_path, "splits")
+
+        # Determinar el directorio de videos correcto
+        # Para V2: val split apunta a videos en test/, no en val/
+        # Leer el split file para detectar esto
+        split_txt_path_temp = os.path.join(base_path, "splits", f"{split}_split.txt")
+        if os.path.exists(split_txt_path_temp):
+            with open(split_txt_path_temp, "r", encoding="utf-8") as f:
+                first_line = f.readline().strip()
+            # Detectar el directorio real (ej: "test\\00625.mp4" → directorio es "test")
+            if first_line:
+                real_dir = first_line.split("\\")[0].split("/")[0]
+                self.videos_dir = os.path.join(base_path, videos_folder, real_dir)
+            else:
+                self.videos_dir = os.path.join(base_path, videos_folder, split)
+        else:
+            self.videos_dir = os.path.join(base_path, videos_folder, split)
 
         self.meta_json = os.path.join(base_path, meta_json)
         self.subset_json = os.path.join(base_path, subset_json)
