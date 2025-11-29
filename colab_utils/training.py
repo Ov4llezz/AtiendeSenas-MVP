@@ -96,6 +96,14 @@ def train_one_epoch(model, dataloader, criterion, optimizer, scheduler, device, 
         logits = outputs.logits
 
         loss = criterion(logits, labels)
+
+        # Check for NaN/Inf
+        if torch.isnan(loss) or torch.isinf(loss):
+            print(f"\\n[ERROR] Loss es NaN/Inf en batch {batch_idx}")
+            print(f"  Logits stats: min={logits.min():.3f}, max={logits.max():.3f}")
+            print(f"  Labels: {labels[:5]}")
+            raise ValueError("Loss es NaN o Inf, deteniendo entrenamiento")
+
         batch_acc = calculate_accuracy(logits, labels)
 
         optimizer.zero_grad()
@@ -146,6 +154,12 @@ def evaluate(model, dataloader, criterion, device, epoch, split="VAL"):
         logits = outputs.logits
 
         loss = criterion(logits, labels)
+
+        # Check for NaN/Inf en validation
+        if torch.isnan(loss) or torch.isinf(loss):
+            print(f"\\n[WARN] Loss es NaN/Inf en validation")
+            continue
+
         batch_acc = calculate_accuracy(logits, labels)
 
         running_loss += loss.item()

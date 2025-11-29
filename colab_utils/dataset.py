@@ -230,7 +230,8 @@ class WLASLVideoDataset(Dataset):
                 continue
 
             frames_t = [self.transform(f) for f in frames]
-            video_tensor = torch.stack(frames_t, dim=0)     # (T, C, H, W)
+            # VideoMAE espera (C, T, H, W), no (T, C, H, W)
+            video_tensor = torch.stack(frames_t, dim=0).permute(1, 0, 2, 3)  # (C, T, H, W)
 
             return video_tensor, torch.tensor(label, dtype=torch.long)
 
