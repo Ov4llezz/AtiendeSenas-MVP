@@ -242,7 +242,86 @@ class WLASLVideoDataset(Dataset):
         )
 
 
+def create_dataloaders(config):
+    """
+    Crea DataLoaders para train y val basándose en la configuración.
 
+    Args:
+        config: Diccionario de configuración con claves:
+            - data_root: ruta base del dataset
+            - batch_size: tamaño del batch
+            - num_workers: workers para DataLoader
+            - num_classes: número de clases (100 o 300)
+            - device: 'cuda' o 'cpu'
 
+    Returns:
+        train_loader, val_loader, train_dataset
+    """
+    from torch.utils.data import DataLoader
+
+    # Determinar base_path según dataset_name
+    dataset_name = config.get('dataset_name', 'wlasl100')
+    base_path = config.get('data_root', f'data/{dataset_name}')
+
+    print(f"[INFO] Creando dataloaders para: {dataset_name}")
+    print(f"[INFO] Base path: {base_path}")
+
+    # Crear datasets
+    try:
+        train_dataset = WLASLVideoDataset(
+            split='train',
+            base_path=base_path,
+            dataset_size=config.get('num_classes', 100)
+        )
+        print(f"[INFO] Train dataset: {len(train_dataset)} muestras")
+    except Exception as e:
+        raise RuntimeError(f"Error al crear train dataset: {e}")
+
+    # Para V2, val usa el test set
+    # Detectar si es V2 por el nombre del dataset
+    is_v2 = '_v2' in dataset_name
+
+    try:
+        if is_v2:
+            # V2: val split apunta a test/
+            val_dataset = WLASLVideoDataset(
+                split='val',  # Lee val_split.txt que apunta a videos en test/
+                base_path=base_path,
+                dataset_size=config.get('num_classes', 100)
+            )
+        else:
+            # V1: val normal
+            val_dataset = WLASLVideoDataset(
+                split='val',
+                base_path=base_path,
+                dataset_size=config.get('num_classes', 100)
+            )
+        print(f"[INFO] Val dataset: {len(val_dataset)} muestras")
+    except Exception as e:
+        raise RuntimeError(f"Error al crear val dataset: {e}")
+
+    # Crear dataloaders
+    pin_memory = config.get('device', 'cpu') == 'cuda'
+
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=config.get('batch_size', 6),
+        shuffle=True,
+        num_workers=config.get('num_workers', 2),
+        pin_memory=pin_memory
+    )
+
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=config.get('batch_size', 6),
+        shuffle=False,
+        num_workers=config.get('num_workers', 2),
+        pin_memory=pin_memory
+    )
+
+    print(f"[INFO] Train batches: {len(train_loader)}")
+    print(f"[INFO] Val batches: {len(val_loader)}")
+
+    return train_loader, val_loader, train_dataset
 
 
