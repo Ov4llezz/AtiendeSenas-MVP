@@ -67,13 +67,14 @@ DEFAULT_CONFIG = {
     "device": "cuda" if torch.cuda.is_available() else "cpu",
     "output_dir": "evaluation_results",
     "top_k": [1, 3, 5],  # Top-K accuracy
+    "checkpoint_dir": "models/v1/wlasl100/checkpoints",  # Ruta corregida (coincide con entrenamiento)
 }
 
 
 # ============================================================
 #   FUNCIONES AUXILIARES
 # ============================================================
-def list_available_runs(checkpoint_dir: str = "models/checkpoints"):
+def list_available_runs(checkpoint_dir: str = "models/v1/wlasl100/checkpoints"):
     """
     Lista todos los runs disponibles con su información.
 
@@ -192,7 +193,7 @@ def print_available_runs(runs_info: list):
     print(f"{'='*80}\n")
 
 
-def get_checkpoint_from_run_id(run_id: int, checkpoint_dir: str = "models/checkpoints") -> str:
+def get_checkpoint_from_run_id(run_id: int, checkpoint_dir: str = "models/v1/wlasl100/checkpoints") -> str:
     """
     Obtiene la ruta del checkpoint dado un run_id.
 
@@ -791,8 +792,8 @@ if __name__ == "__main__":
                         help="Listar todos los runs disponibles y salir")
 
     # Directorio de checkpoints
-    parser.add_argument("--checkpoint_dir", type=str, default="models/checkpoints",
-                        help="Directorio donde están los runs")
+    parser.add_argument("--checkpoint_dir", type=str, default=DEFAULT_CONFIG["checkpoint_dir"],
+                        help="Directorio donde están los runs V1")
 
     # Dataset
     parser.add_argument("--base_path", type=str, default=DEFAULT_CONFIG["base_path"],
