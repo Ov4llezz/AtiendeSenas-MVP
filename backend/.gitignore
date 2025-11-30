@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+venv_backend/
+env/
+ENV/
+
+# Environment variables
+.env
+
+# Temporary uploads
+temp_uploads/
+*.mp4
+*.mov
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

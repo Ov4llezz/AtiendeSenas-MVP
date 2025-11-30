@@ -13,6 +13,29 @@ Genera:
 - Visualizaciones (confusion matrix heatmap)
 """
 
+# ============================================================
+#   NUMPY COMPATIBILITY PATCH (NumPy 1.x <-> 2.x)
+# ============================================================
+import sys
+import numpy as np
+
+# Monkey patch: mapear numpy._core a numpy.core (para checkpoints de NumPy 2.x)
+class _CoreModule:
+    """Módulo dummy que redirige numpy._core a numpy.core"""
+    def __getattr__(self, name):
+        if hasattr(np.core, name):
+            return getattr(np.core, name)
+        if hasattr(np, name):
+            return getattr(np, name)
+        raise AttributeError(f"module 'numpy._core' has no attribute '{name}'")
+
+sys.modules['numpy._core'] = _CoreModule()
+sys.modules['numpy._core.multiarray'] = np.core.multiarray
+sys.modules['numpy._core.umath'] = np.core.umath
+
+# ============================================================
+#   IMPORTS
+# ============================================================
 import os
 import argparse
 import json
@@ -104,7 +127,7 @@ def list_available_runs(checkpoint_dir: str = "models/checkpoints"):
 
         # Leer best_model.pt para obtener métricas
         try:
-            checkpoint = torch.load(best_model_path, map_location='cpu')
+            checkpoint = torch.load(best_model_path, map_location='cpu', weights_only=False)
 
             # Intentar múltiples claves posibles (compatibilidad con versiones anteriores)
             run_info["epoch"] = checkpoint.get('epoch', checkpoint.get('epochs', 'N/A'))
@@ -206,7 +229,7 @@ def get_checkpoint_from_run_id(run_id: int, checkpoint_dir: str = "models/checkp
 def load_model(checkpoint_path: str, device: str):
     """Carga modelo desde checkpoint"""
     print(f"[INFO] Cargando checkpoint: {checkpoint_path}")
-    checkpoint = torch.load(checkpoint_path, map_location=device)
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
 
     # Obtener configuración del modelo
     config_dir = Path(checkpoint_path).parent
@@ -714,7 +737,7 @@ def main(args):
     print("\n[INFO] Guardando resultados...")
 
     # Leer checkpoint info directamente del checkpoint para asegurar compatibilidad
-    checkpoint = torch.load(config["checkpoint_path"], map_location='cpu')
+    checkpoint = torch.load(config["checkpoint_path"], map_location='cpu', weights_only=False)
 
     epoch = checkpoint.get('epoch')
     if epoch is None:

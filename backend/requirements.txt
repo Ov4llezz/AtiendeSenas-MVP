@@ -1,0 +1,21 @@
+# Backend Dependencies - Python 3.10.0
+# FastAPI y servidor
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Procesamiento de video
+opencv-python==4.8.1.78
+numpy==1.24.3
+
+# PyTorch y modelo VideoMAE
+torch==2.1.0
+torchvision==0.16.0
+transformers==4.36.0
+
+# Google Gemini
+google-generativeai==0.3.1
+
+# Utilidades
+python-dotenv==1.0.0
+pydantic==2.5.0

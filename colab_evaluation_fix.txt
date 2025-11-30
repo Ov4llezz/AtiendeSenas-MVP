@@ -1,0 +1,35 @@
+# ========================================
+# CELDA PARA AGREGAR AL NOTEBOOK DE COLAB
+# ========================================
+# Agregar ANTES de la celda 22 (antes de evaluar)
+
+# Aplicar fix de compatibilidad NumPy (necesario en Colab)
+import sys
+import numpy as np
+
+# Monkey patch para compatibilidad NumPy 1.x <-> 2.x
+class _CoreModule:
+    def __getattr__(self, name):
+        if hasattr(np.core, name):
+            return getattr(np.core, name)
+        if hasattr(np, name):
+            return getattr(np, name)
+        raise AttributeError(f"module 'numpy._core' has no attribute '{name}'")
+
+sys.modules['numpy._core'] = _CoreModule()
+sys.modules['numpy._core.multiarray'] = np.core.multiarray
+sys.modules['numpy._core.umath'] = np.core.umath
+
+print("✓ NumPy compatibility patch aplicado")
+print(f"NumPy version: {np.__version__}")
+
+# ========================================
+# AHORA SÍ PUEDES EJECUTAR LAS CELDAS 22-27
+# ========================================
+
+# Celda 22: Listar runs
+!python scripts/test.py --list-runs
+
+# Celda 24: Evaluar run específico
+RUN_ID = 1  # ← CAMBIA ESTE NÚMERO SEGÚN LA LISTA ANTERIOR
+!python scripts/test.py --run-id {RUN_ID}

@@ -1,0 +1,608 @@
+================================================================================
+  GUÍA DE INSTALACIÓN Y EJECUCIÓN PASO A PASO
+  Sistema Tótem LSCh - Reconocimiento de Lengua de Señas + Chatbot Gemini
+================================================================================
+
+FECHA: 30 de Noviembre, 2025
+PROYECTO: AtiendeSenas-MVP
+AUTOR: Rafael Ovalle - Tesis UNAB
+
+================================================================================
+ÍNDICE
+================================================================================
+1. Prerequisitos del Sistema
+2. Configuración del Entorno Virtual Python
+3. Instalación de Dependencias del Backend
+4. Configuración de Variables de Entorno
+5. Instalación de Dependencias del Frontend
+6. Verificación de Archivos Necesarios
+7. Ejecución del Sistema
+8. Pruebas de Funcionamiento
+9. Solución de Problemas Comunes
+10. Configuración Avanzada
+
+================================================================================
+1. PREREQUISITOS DEL SISTEMA
+================================================================================
+
+ANTES DE COMENZAR, asegúrate de tener instalado:
+
+A) Python 3.10.0 o superior
+   - Verificar: py -3.10 --version
+   - Descargar de: https://www.python.org/downloads/release/python-31011/
+   - IMPORTANTE: Durante la instalación, marcar "Add Python to PATH"
+
+B) Node.js 18+ y npm
+   - Verificar: node --version && npm --version
+   - Descargar de: https://nodejs.org/
+
+C) Git (para clonar el repositorio)
+   - Verificar: git --version
+   - Descargar de: https://git-scm.com/
+
+D) GPU recomendada (opcional pero acelera VideoMAE)
+   - NVIDIA GPU con CUDA compatible
+   - Si no tienes GPU, el sistema funcionará en CPU (más lento)
+
+E) API Key de Google Gemini
+   - Obtener en: https://ai.google.dev/
+   - Crear una cuenta y generar una API key
+   - GUARDAR LA KEY en un lugar seguro
+
+F) Modelo VideoMAE entrenado
+   - Debe estar en: models/v2/wlasl100/checkpoints/run_XXXXXX/best_model.pt
+   - Si no lo tienes, primero debes entrenar el modelo con notebook_corregido.ipynb
+
+================================================================================
+2. CONFIGURACIÓN DEL ENTORNO VIRTUAL PYTHON
+================================================================================
+
+PASO 2.1: Abrir terminal en la carpeta del proyecto
+-------------------------------------------------------
+cd C:\Users\ov4ll\Desktop\TESIS\AtiendeSenas-MVP
+
+PASO 2.2: Crear entorno virtual con Python 3.10
+-------------------------------------------------------
+Windows CMD:
+    py -3.10 -m venv venv_backend
+
+Windows Git Bash:
+    py -3.10 -m venv venv_backend
+
+Linux/Mac:
+    python3.10 -m venv venv_backend
+
+PASO 2.3: Activar entorno virtual
+-------------------------------------------------------
+Windows CMD:
+    venv_backend\Scripts\activate.bat
+
+Windows Git Bash:
+    source venv_backend/Scripts/activate
+
+Linux/Mac:
+    source venv_backend/bin/activate
+
+VERIFICACIÓN:
+Deberías ver (venv_backend) al inicio de tu línea de comandos.
+
+PASO 2.4: Verificar versión de Python en el entorno
+-------------------------------------------------------
+python --version
+
+DEBE mostrar: Python 3.10.0 (o superior)
+
+================================================================================
+3. INSTALACIÓN DE DEPENDENCIAS DEL BACKEND
+================================================================================
+
+PASO 3.1: Navegar a la carpeta backend
+-------------------------------------------------------
+cd backend
+
+PASO 3.2: Instalar todas las dependencias
+-------------------------------------------------------
+pip install -r requirements.txt
+
+ESTO INSTALARÁ:
+- fastapi==0.104.1
+- uvicorn[standard]==0.24.0
+- python-multipart==0.0.6
+- opencv-python==4.8.1.78
+- numpy==1.24.3
+- torch==2.1.0
+- torchvision==0.16.0
+- transformers==4.36.0
+- google-generativeai==0.3.1
+- python-dotenv==1.0.0
+- pydantic==2.5.0
+
+TIEMPO ESTIMADO: 5-10 minutos (depende de tu conexión)
+
+NOTA IMPORTANTE:
+Si tienes GPU NVIDIA con CUDA, PyTorch detectará automáticamente CUDA.
+Si no tienes GPU, se instalará la versión CPU.
+
+PASO 3.3: Verificar instalación
+-------------------------------------------------------
+python -c "import fastapi; import torch; import transformers; import google.generativeai; print('✓ Todas las librerías instaladas correctamente')"
+
+DEBE mostrar: ✓ Todas las librerías instaladas correctamente
+
+================================================================================
+4. CONFIGURACIÓN DE VARIABLES DE ENTORNO
+================================================================================
+
+PASO 4.1: Crear archivo .env desde el template
+-------------------------------------------------------
+Estando en la carpeta backend/:
+
+Windows CMD:
+    copy .env.example .env
+
+Windows Git Bash / Linux / Mac:
+    cp .env.example .env
+
+PASO 4.2: Editar el archivo .env
+-------------------------------------------------------
+Abrir backend/.env con tu editor de texto favorito (VSCode, Notepad++, etc.)
+
+CONFIGURACIÓN OBLIGATORIA:
+
+1) GEMINI_API_KEY (OBLIGATORIO)
+   Reemplazar "your_api_key_here" con tu API key real de Gemini
+   Ejemplo:
+   GEMINI_API_KEY=AIzaSyDxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+2) MODEL_PATH (OBLIGATORIO)
+   Apuntar al modelo VideoMAE entrenado
+   Ejemplo:
+   MODEL_PATH=../models/v2/wlasl100/checkpoints/run_20251130_235959/best_model.pt
+
+   IMPORTANTE: Encuentra el nombre exacto de tu carpeta run_XXXXXX
+
+3) GLOSSES_PATH (OBLIGATORIO)
+   Apuntar al archivo de glosas
+   Ejemplo:
+   GLOSSES_PATH=../glosas_wlasl100_es.txt
+
+4) NUM_CLASSES (OBLIGATORIO)
+   Número de clases del modelo
+   Opciones:
+   - 100 para WLASL100
+   - 300 para WLASL300
+
+CONFIGURACIÓN OPCIONAL (tiene valores por defecto):
+
+5) HOST=0.0.0.0
+   Dejar como está
+
+6) PORT=8000
+   Puerto del backend (cambiar solo si 8000 está ocupado)
+
+7) CORS_ORIGINS=http://localhost:5173
+   Origen permitido para el frontend (cambiar solo si usas otro puerto)
+
+8) MAX_UPLOAD_SIZE_MB=50
+   Tamaño máximo de video permitido
+
+9) ALLOWED_EXTENSIONS=mp4,mov
+   Formatos de video permitidos
+
+10) MIN_CONFIDENCE=0.55
+    Confianza mínima para llamar a Gemini
+
+PASO 4.3: Guardar y cerrar el archivo .env
+
+PASO 4.4: Verificar configuración
+-------------------------------------------------------
+python -c "from config import config; print(f'✓ Config cargada: Gemini={bool(config.GEMINI_API_KEY)}, Classes={config.NUM_CLASSES}')"
+
+DEBE mostrar algo como:
+✓ Config cargada: Gemini=True, Classes=100
+
+================================================================================
+5. INSTALACIÓN DE DEPENDENCIAS DEL FRONTEND
+================================================================================
+
+PASO 5.1: Abrir NUEVA terminal (o cerrar la anterior)
+-------------------------------------------------------
+IMPORTANTE: No necesitas el entorno virtual activado para el frontend
+
+PASO 5.2: Navegar a la carpeta frontend
+-------------------------------------------------------
+cd C:\Users\ov4ll\Desktop\TESIS\AtiendeSenas-MVP\frontend
+
+PASO 5.3: Instalar dependencias de Node
+-------------------------------------------------------
+npm install
+
+ESTO INSTALARÁ:
+- React 18
+- Vite
+- TypeScript
+- TailwindCSS
+- Axios
+- Y todas las dependencias de desarrollo
+
+TIEMPO ESTIMADO: 2-3 minutos
+
+PASO 5.4: Verificar instalación
+-------------------------------------------------------
+Deberías ver una carpeta node_modules/ creada.
+
+npm list react vite axios
+
+DEBE mostrar las versiones instaladas sin errores.
+
+================================================================================
+6. VERIFICACIÓN DE ARCHIVOS NECESARIOS
+================================================================================
+
+ANTES DE EJECUTAR, verifica que existan estos archivos:
+
+BACKEND:
+✓ backend/main.py
+✓ backend/config.py
+✓ backend/.env (con tu API key configurada)
+✓ backend/requirements.txt
+✓ backend/modules/__init__.py
+✓ backend/modules/video_ingestion.py
+✓ backend/modules/video_processing.py
+✓ backend/modules/videomae_inference.py
+✓ backend/modules/conversation_history.py
+✓ backend/modules/gemini_chatbot.py
+✓ backend/temp_uploads/ (carpeta vacía)
+
+FRONTEND:
+✓ frontend/package.json
+✓ frontend/vite.config.ts
+✓ frontend/src/App.tsx
+✓ frontend/src/main.tsx
+✓ frontend/src/index.css
+✓ frontend/src/components/VideoUploader.tsx
+✓ frontend/src/components/PredictionDisplay.tsx
+✓ frontend/src/components/ChatResponseDisplay.tsx
+✓ frontend/src/components/LatencyPanel.tsx
+✓ frontend/src/components/LoadingIndicator.tsx
+✓ frontend/index.html
+
+MODELO Y DATOS:
+✓ models/v2/wlasl100/checkpoints/run_XXXXXX/best_model.pt
+✓ glosas_wlasl100_es.txt
+
+Si falta algún archivo, revisa la implementación.
+
+================================================================================
+7. EJECUCIÓN DEL SISTEMA
+================================================================================
+
+NECESITARÁS 2 TERMINALES ABIERTAS SIMULTÁNEAMENTE
+
+-------------------------------------------------------
+TERMINAL 1: BACKEND
+-------------------------------------------------------
+
+PASO 7.1: Navegar a backend
+cd C:\Users\ov4ll\Desktop\TESIS\AtiendeSenas-MVP\backend
+
+PASO 7.2: Activar entorno virtual
+Windows CMD:    venv_backend\Scripts\activate.bat
+Git Bash:       source ../venv_backend/Scripts/activate
+Linux/Mac:      source ../venv_backend/bin/activate
+
+PASO 7.3: Ejecutar servidor backend
+python main.py
+
+ESPERADO:
+Verás mensajes como:
+----------------------------------------------------------------------
+              INICIANDO SERVIDOR - TÓTEM LSCh API
+----------------------------------------------------------------------
+Host: 0.0.0.0
+Puerto: 8000
+CORS Origins: ['http://localhost:5173']
+Confianza mínima: 0.55
+----------------------------------------------------------------------
+
+[INFO] Inicializando modelo VideoMAE...
+[INFO] Usando dispositivo: cuda  (o cpu si no tienes GPU)
+[INFO] Cargando checkpoint desde: ../models/v2/wlasl100/checkpoints/...
+[INFO] Checkpoint cargado (Epoch: XX)
+[INFO] Modelo VideoMAE cargado exitosamente
+[INFO] Cargadas 100 glosas desde ../glosas_wlasl100_es.txt
+[INFO] Cliente Gemini inicializado correctamente
+INFO:     Started server process [XXXX]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+
+Si ves estos mensajes, ¡el backend está funcionando correctamente!
+
+DEJAR ESTA TERMINAL ABIERTA Y CORRIENDO
+
+-------------------------------------------------------
+TERMINAL 2: FRONTEND
+-------------------------------------------------------
+
+PASO 7.4: Abrir NUEVA terminal
+
+PASO 7.5: Navegar a frontend
+cd C:\Users\ov4ll\Desktop\TESIS\AtiendeSenas-MVP\frontend
+
+PASO 7.6: Ejecutar servidor de desarrollo
+npm run dev
+
+ESPERADO:
+Verás mensajes como:
+  VITE v5.0.8  ready in XXX ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+  ➜  press h to show help
+
+Si ves esto, ¡el frontend está funcionando!
+
+DEJAR ESTA TERMINAL ABIERTA Y CORRIENDO
+
+-------------------------------------------------------
+PASO 7.7: Abrir navegador
+-------------------------------------------------------
+
+Ir a: http://localhost:5173
+
+DEBERÍAS VER:
+- Título: "Tótem de Autoatención"
+- Subtítulo: "Sistema de Reconocimiento de Lengua de Señas Chilena"
+- Recuadro central grande para subir video
+- Instrucciones: "Toque aquí para cargar un video"
+
+Si ves esto, ¡el sistema está completamente funcional!
+
+================================================================================
+8. PRUEBAS DE FUNCIONAMIENTO
+================================================================================
+
+PRUEBA 1: Health Check del Backend
+-------------------------------------------------------
+Abrir en navegador: http://localhost:8000/health
+
+ESPERADO (JSON):
+{
+  "status": "healthy",
+  "model_loaded": true,
+  "gemini_configured": true,
+  "history_length": 0
+}
+
+PRUEBA 2: Subir un video de prueba
+-------------------------------------------------------
+1. En http://localhost:5173, hacer click en el recuadro central
+2. Seleccionar un archivo de video (.mp4 o .mov)
+3. El video debería mostrarse en preview
+4. Automáticamente comenzará el procesamiento
+5. Verás el indicador de carga: "Procesando video..."
+
+ESPERADO:
+- Después de unos segundos, verás:
+  * Palabra detectada (ej: "HELLO")
+  * Porcentaje de confianza con color (verde/amarillo/rojo)
+  * Respuesta del asistente (texto empático en español)
+  * Panel pequeño en esquina superior derecha con latencias
+
+PRUEBA 3: Verificar logs del backend
+-------------------------------------------------------
+En la terminal del backend, deberías ver:
+
+[PIPELINE] Procesando video: test_video.mp4
+[OK] Video guardado temporalmente: ...
+[PIPELINE] Procesando frames...
+[OK] Video procesado: [1, 16, 3, 224, 224]
+[PIPELINE] Ejecutando inferencia VideoMAE...
+[OK] Predicción: HELLO (confianza: 85.23%)
+[OK] Latencia VideoMAE: 456.78ms
+[PIPELINE] Actualizando historial conversacional...
+[OK] Historial actualizado: ['HELLO']
+[PIPELINE] Generando respuesta con Gemini...
+[OK] Respuesta generada: ¡Hola! Bienvenido al tótem de...
+[OK] Latencia Gemini: 324.56ms
+[OK] Latencia total del pipeline: 781.34ms
+[PIPELINE] ✓ Pipeline completado exitosamente
+[CLEANUP] Archivo temporal eliminado
+
+Si ves estos logs, ¡todo funciona perfectamente!
+
+PRUEBA 4: Resetear historial
+-------------------------------------------------------
+POST a: http://localhost:8000/api/reset-history
+
+O desde frontend: subir otro video con la palabra "HELLO" o "HI"
+El historial se resetea automáticamente.
+
+================================================================================
+9. SOLUCIÓN DE PROBLEMAS COMUNES
+================================================================================
+
+PROBLEMA 1: Backend no inicia - "GEMINI_API_KEY no está configurada"
+-------------------------------------------------------
+SOLUCIÓN:
+- Verificar que el archivo backend/.env existe
+- Abrir .env y verificar que GEMINI_API_KEY tiene un valor real
+- NO debe decir "your_api_key_here"
+- Reiniciar el backend
+
+PROBLEMA 2: Backend no inicia - "No se encontró checkpoint"
+-------------------------------------------------------
+SOLUCIÓN:
+- Verificar que MODEL_PATH en .env apunta al archivo correcto
+- Buscar el archivo best_model.pt en tu carpeta models/
+- Actualizar MODEL_PATH con la ruta correcta
+- Formato: ../models/v2/wlasl100/checkpoints/run_XXXXXX/best_model.pt
+
+PROBLEMA 3: Frontend no se conecta al backend - CORS Error
+-------------------------------------------------------
+SOLUCIÓN:
+- Verificar que el backend está corriendo en http://localhost:8000
+- Verificar que CORS_ORIGINS en .env incluye http://localhost:5173
+- Reiniciar el backend después de cambiar .env
+
+PROBLEMA 4: "ModuleNotFoundError: No module named 'fastapi'"
+-------------------------------------------------------
+SOLUCIÓN:
+- Activar el entorno virtual: source venv_backend/Scripts/activate
+- Verificar: python --version (debe ser 3.10+)
+- Reinstalar dependencias: pip install -r requirements.txt
+
+PROBLEMA 5: Frontend muestra página en blanco
+-------------------------------------------------------
+SOLUCIÓN:
+- Abrir consola del navegador (F12)
+- Verificar errores de JavaScript
+- Verificar que npm install se ejecutó correctamente
+- Reiniciar servidor: Ctrl+C, luego npm run dev
+
+PROBLEMA 6: Video tarda mucho en procesar
+-------------------------------------------------------
+POSIBLES CAUSAS:
+- Si no tienes GPU, VideoMAE puede tardar 5-10 segundos
+- Gemini puede tardar 1-2 segundos
+- Total esperado: 2-12 segundos dependiendo de hardware
+
+PROBLEMA 7: Error "RuntimeError: CUDA out of memory"
+-------------------------------------------------------
+SOLUCIÓN:
+- Reducir tamaño del video
+- Usar CPU en lugar de GPU (automático si no hay memoria)
+- Cerrar otros programas que usen GPU
+
+PROBLEMA 8: "npm: command not found"
+-------------------------------------------------------
+SOLUCIÓN:
+- Instalar Node.js desde https://nodejs.org/
+- Verificar instalación: node --version && npm --version
+
+PROBLEMA 9: Puerto 8000 o 5173 ya está en uso
+-------------------------------------------------------
+SOLUCIÓN:
+Backend:
+- Cambiar PORT en .env a otro puerto (ej: 8001)
+- Actualizar CORS_ORIGINS si cambias puerto del backend
+- Reiniciar
+
+Frontend:
+- Editar vite.config.ts, cambiar server.port a otro número
+- O usar: npm run dev -- --port 5174
+
+PROBLEMA 10: Instalación de PyTorch falla
+-------------------------------------------------------
+SOLUCIÓN:
+- Instalar PyTorch manualmente desde https://pytorch.org/
+- Seleccionar: Python 3.10, tu OS, pip, CUDA (si tienes) o CPU
+- Copiar y ejecutar el comando proporcionado
+- Luego ejecutar: pip install -r requirements.txt (saltará PyTorch)
+
+================================================================================
+10. CONFIGURACIÓN AVANZADA
+================================================================================
+
+CAMBIAR A WLASL300 (300 clases en lugar de 100)
+-------------------------------------------------------
+En backend/.env:
+    NUM_CLASSES=300
+    MODEL_PATH=../models/v2/wlasl300/checkpoints/run_XXXXXX/best_model.pt
+    GLOSSES_PATH=../glosas_wlasl300_es.txt
+
+Reiniciar backend.
+
+AJUSTAR UMBRAL DE CONFIANZA
+-------------------------------------------------------
+En backend/.env:
+    MIN_CONFIDENCE=0.70  # Más estricto (solo palabras muy seguras)
+    MIN_CONFIDENCE=0.45  # Más permisivo
+
+Valor recomendado: 0.55
+
+CAMBIAR PUERTO DEL BACKEND
+-------------------------------------------------------
+En backend/.env:
+    PORT=8001
+
+En frontend/vite.config.ts:
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8001',  # Cambiar puerto aquí también
+        ...
+      }
+    }
+
+MODO PRODUCCIÓN (NO desarrollo)
+-------------------------------------------------------
+Backend:
+    uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+
+Frontend:
+    npm run build
+    npm run preview
+
+Los archivos compilados estarán en frontend/dist/
+
+LOGS MÁS DETALLADOS
+-------------------------------------------------------
+En backend/main.py, al final:
+    uvicorn.run(
+        "main:app",
+        host=config.HOST,
+        port=config.PORT,
+        reload=True,
+        log_level="debug"  # Cambiar de "info" a "debug"
+    )
+
+CONFIGURAR HTTPS (Producción)
+-------------------------------------------------------
+Usar un reverse proxy como Nginx o Apache.
+Configurar certificados TLS/SSL.
+Actualizar CORS_ORIGINS con el dominio HTTPS.
+
+================================================================================
+APÉNDICE: COMANDOS RÁPIDOS DE REFERENCIA
+================================================================================
+
+INICIAR SISTEMA COMPLETO (después de primera instalación):
+
+Terminal 1:
+    cd backend
+    source ../venv_backend/Scripts/activate  # o activate.bat en Windows
+    python main.py
+
+Terminal 2:
+    cd frontend
+    npm run dev
+
+Navegador:
+    http://localhost:5173
+
+DETENER SISTEMA:
+    En cada terminal: Ctrl+C
+
+ACTUALIZAR CÓDIGO (si hay cambios en GitHub):
+    git pull
+    cd backend && pip install -r requirements.txt
+    cd ../frontend && npm install
+
+LIMPIAR ARCHIVOS TEMPORALES:
+    Eliminar carpeta: backend/temp_uploads/*
+
+VER LOGS EN TIEMPO REAL:
+    Backend: Ver terminal donde corre python main.py
+    Frontend: F12 en navegador → Console
+
+================================================================================
+FIN DE LA GUÍA
+================================================================================
+
+Para soporte adicional, consultar:
+- README_TOTEM.md en la raíz del proyecto
+- Documentación técnica en BITACORA_IMPLEMENTACION_TESIS.txt
+- Código fuente con comentarios en español
+
+¡Éxito con tu implementación y defensa de tesis!

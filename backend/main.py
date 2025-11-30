@@ -1,305 +1,268 @@
 """
-AtiendeSeñas API - Main FastAPI application
+Backend API - Tótem LSCh (Lengua de Señas Chilena)
+Sistema de reconocimiento de señas + chatbot Gemini
 
-This is the entry point for the backend service that handles:
-- Sign language video translation (VideoMAE)
-- Chatbot integration
-- Full pipeline orchestration
-
-To run the development server:
-    uvicorn backend.main:app --reload --port 8000
-
-Then visit:
-    - http://localhost:8000/docs (Swagger UI)
-    - http://localhost:8000/api/health (Health check)
-    - http://localhost:8000/api/debug/settings (Configuration debug)
+Endpoint principal: POST /api/full-pipeline
 """
 
-import logging
-from typing import Dict, Any
-from fastapi import FastAPI, Request, Depends, UploadFile, File, HTTPException
+import time
+from typing import List, Optional
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from backend.config import Settings
-from backend.dependencies import get_settings
-
-
-# ============================================================================
-# Logging Configuration
-# ============================================================================
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+from config import config
+from modules import (
+    ingest_video,
+    cleanup_temp_file,
+    process_video,
+    videomae_model,
+    ConversationHistory,
+    gemini_chatbot
 )
-logger = logging.getLogger(__name__)
 
 
-# ============================================================================
-# Request/Response Models
-# ============================================================================
+# === Modelos de datos ===
 
-class ChatRequest(BaseModel):
-    """Request model for chat endpoint"""
-    text: str
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "text": "Hola, ¿cómo estás?"
-            }
-        }
+class LatencyInfo(BaseModel):
+    """Información de latencias del pipeline"""
+    videomae: float
+    chatbot: float
+    total: float
 
 
-# ============================================================================
-# Application Setup
-# ============================================================================
+class PipelineResponse(BaseModel):
+    """Respuesta del endpoint /api/full-pipeline"""
+    predicted_word: str
+    confidence: float
+    chatbot_response: str
+    history: List[str]
+    latency_ms: LatencyInfo
+
+
+# === Inicialización de FastAPI ===
 
 app = FastAPI(
-    title="AtiendeSeñas API",
-    description="API for Chilean Sign Language translation and chatbot integration",
-    version="0.1.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    title="Tótem LSCh API",
+    description="API de reconocimiento de Lengua de Señas + Chatbot Gemini",
+    version="1.0.0"
 )
 
+# Configurar CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=config.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# ============================================================================
-# CORS Configuration
-# ============================================================================
-
-def setup_cors(application: FastAPI, settings: Settings) -> None:
-    """
-    Configure CORS middleware to allow frontend requests.
-
-    Args:
-        application: FastAPI app instance
-        settings: Application settings with CORS origins
-    """
-    application.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.BACKEND_CORS_ORIGINS,
-        allow_credentials=True,
-        allow_methods=["*"],  # Allows all HTTP methods (GET, POST, etc.)
-        allow_headers=["*"],  # Allows all headers
-    )
+# Instancia global de historial conversacional
+# En producción, esto debería ser por sesión de usuario
+conversation_history = ConversationHistory()
 
 
-# Initialize CORS with settings
-setup_cors(app, get_settings())
+# === Endpoints ===
 
-
-# ============================================================================
-# Global Exception Handler
-# ============================================================================
-
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """
-    Global exception handler for uncaught errors.
-
-    Args:
-        request: The incoming request
-        exc: The exception that was raised
-
-    Returns:
-        JSONResponse with error details
-    """
-    return JSONResponse(
-        status_code=500,
-        content={
-            "detail": str(exc),
-            "error_type": type(exc).__name__,
-            "path": str(request.url),
-        },
-    )
-
-
-# ============================================================================
-# API Routes
-# ============================================================================
-
-@app.get("/api/health")
-async def health_check() -> Dict[str, str]:
-    """
-    Health check endpoint to verify the service is running.
-
-    Returns:
-        Dict with status, service name, and version
-    """
+@app.get("/")
+async def root():
+    """Endpoint raíz - Health check"""
     return {
-        "status": "ok",
-        "service": "AtiendeSeñas API",
-        "version": "0.1.0",
+        "status": "online",
+        "service": "Tótem LSCh API",
+        "version": "1.0.0"
     }
 
 
-@app.get("/api/debug/settings")
-async def debug_settings(settings: Settings = Depends(get_settings)) -> Dict[str, Any]:
-    """
-    Debug endpoint to view current configuration.
-    Useful during development to verify settings are loaded correctly.
-
-    Args:
-        settings: Injected application settings
-
-    Returns:
-        Dict with current configuration values
-    """
+@app.get("/health")
+async def health_check():
+    """Endpoint de health check detallado"""
     return {
-        "app_name": settings.APP_NAME,
-        "app_version": settings.APP_VERSION,
-        "cors_origins": settings.BACKEND_CORS_ORIGINS,
+        "status": "healthy",
+        "model_loaded": videomae_model is not None,
+        "gemini_configured": config.GEMINI_API_KEY is not None,
+        "history_length": len(conversation_history)
     }
 
 
-# ============================================================================
-# Translation & Pipeline Endpoints
-# ============================================================================
-
-@app.post("/api/translate")
-async def translate_sign_language(
-    video: UploadFile = File(...)
-) -> Dict[str, Any]:
+@app.post("/api/full-pipeline", response_model=PipelineResponse)
+async def full_pipeline(
+    video: UploadFile = File(..., description="Video de seña (mp4/mov)"),
+    history: Optional[str] = Form(None, description="Historial previo (JSON string)")
+):
     """
-    Translate sign language video to text using VideoMAE model.
+    Pipeline completo de procesamiento de video de señas.
 
-    Currently returns dummy data. Will be replaced with actual model inference.
+    Flujo:
+    1. Recibe video del usuario
+    2. Procesa y extrae frames
+    3. Realiza inferencia con VideoMAE
+    4. Si confianza >= 0.55:
+       - Actualiza historial
+       - Genera respuesta con Gemini
+    5. Si confianza < 0.55:
+       - Retorna mensaje fallback
+    6. Retorna resultado estructurado con latencias
 
     Args:
-        video: Uploaded video file (multipart/form-data)
+        video: Archivo de video (mp4 o mov)
+        history: Historial previo serializado (opcional)
 
     Returns:
-        Dict with detected sign and confidence score
+        PipelineResponse: Resultado completo del pipeline
     """
+
+    temp_video_path = None
+    pipeline_start = time.time()
+
     try:
-        logger.info(f"POST /api/translate called - filename: {video.filename}, content_type: {video.content_type}")
+        # === 1. INGRESO DE VIDEO ===
+        print(f"\n[PIPELINE] Procesando video: {video.filename}")
 
-        # Validate file type (optional but recommended)
-        if video.content_type not in ["video/mp4", "video/avi", "video/mov", "video/webm"]:
-            logger.warning(f"Invalid content type: {video.content_type}")
+        temp_video_path = await ingest_video(video)
+        print(f"[OK] Video guardado temporalmente: {temp_video_path}")
 
-        # TODO: Replace with actual VideoMAE model inference
-        # For now, return dummy data
-        return {
-            "sign": "placeholder_sign",
-            "confidence": 0.0
-        }
+        # === 2. PROCESAMIENTO DE VIDEO ===
+        print("[PIPELINE] Procesando frames...")
 
-    except Exception as e:
-        logger.error(f"Error in /api/translate: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error processing video: {str(e)}"
+        video_tensor, metadata = process_video(temp_video_path)
+        print(f"[OK] Video procesado: {metadata['tensor_shape']}")
+
+        # === 3. INFERENCIA VIDEOMAE ===
+        print("[PIPELINE] Ejecutando inferencia VideoMAE...")
+
+        predicted_word, confidence, videomae_latency = videomae_model.predict(video_tensor)
+
+        print(f"[OK] Predicción: {predicted_word} (confianza: {confidence:.2%})")
+        print(f"[OK] Latencia VideoMAE: {videomae_latency:.2f}ms")
+
+        # === 4. DECISIÓN BASADA EN CONFIANZA ===
+
+        chatbot_latency = 0.0
+        chatbot_response = ""
+
+        if confidence < config.MIN_CONFIDENCE:
+            # Confianza baja → No llamar a Gemini
+            print(f"[WARN] Confianza baja ({confidence:.2%}). Usando mensaje fallback.")
+
+            chatbot_response = gemini_chatbot.generate_low_confidence_response()
+            # NO actualizar historial
+
+        else:
+            # Confianza suficiente → Procesar normalmente
+
+            # === 5. ACTUALIZAR HISTORIAL ===
+            print("[PIPELINE] Actualizando historial conversacional...")
+
+            updated_history = conversation_history.update(predicted_word, confidence)
+            print(f"[OK] Historial actualizado: {updated_history}")
+
+            # === 6. GENERAR RESPUESTA CON GEMINI ===
+            print("[PIPELINE] Generando respuesta con Gemini...")
+
+            try:
+                chatbot_response, chatbot_latency = gemini_chatbot.generate_response(
+                    current_word=predicted_word,
+                    history=updated_history
+                )
+                print(f"[OK] Respuesta generada: {chatbot_response[:50]}...")
+                print(f"[OK] Latencia Gemini: {chatbot_latency:.2f}ms")
+
+            except Exception as e:
+                print(f"[ERROR] Fallo al generar respuesta con Gemini: {e}")
+                chatbot_response = gemini_chatbot.generate_error_fallback("api_error")
+                chatbot_latency = 0.0
+
+        # === 7. CALCULAR LATENCIAS TOTALES ===
+        total_latency = (time.time() - pipeline_start) * 1000
+
+        print(f"[OK] Latencia total del pipeline: {total_latency:.2f}ms")
+
+        # === 8. CONSTRUIR RESPUESTA ===
+        response = PipelineResponse(
+            predicted_word=predicted_word,
+            confidence=confidence,
+            chatbot_response=chatbot_response,
+            history=conversation_history.get_history(),
+            latency_ms=LatencyInfo(
+                videomae=videomae_latency,
+                chatbot=chatbot_latency,
+                total=total_latency
+            )
         )
 
+        print("[PIPELINE] ✓ Pipeline completado exitosamente\n")
 
-@app.post("/api/chat")
-async def chat(request: ChatRequest) -> Dict[str, str]:
-    """
-    Send message to chatbot and get response.
-
-    Currently returns dummy data. Will be replaced with actual chatbot integration.
-
-    Args:
-        request: ChatRequest with 'text' field
-
-    Returns:
-        Dict with chatbot response
-
-    Raises:
-        HTTPException: If 'text' field is missing or empty
-    """
-    try:
-        # Validation happens automatically via Pydantic
-        if not request.text or request.text.strip() == "":
-            logger.warning("POST /api/chat called with empty text")
-            raise HTTPException(
-                status_code=400,
-                detail="Text field cannot be empty"
-            )
-
-        logger.info(f"POST /api/chat called - text: {request.text[:50]}...")
-
-        # TODO: Replace with actual chatbot API call (OpenAI/Voiceflow/Globot)
-        # For now, return dummy data
-        return {
-            "response": "placeholder_response"
-        }
+        return response
 
     except HTTPException:
-        # Re-raise HTTP exceptions
+        # Re-raise HTTPExceptions (errores de validación)
         raise
+
     except Exception as e:
-        logger.error(f"Error in /api/chat: {str(e)}", exc_info=True)
+        # Errores inesperados
+        print(f"[ERROR] Error inesperado en el pipeline: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Error processing chat request: {str(e)}"
+            detail=f"Error interno del servidor: {str(e)}"
         )
 
+    finally:
+        # === 9. LIMPIEZA ===
+        # Siempre limpiar archivo temporal, incluso si hay errores
+        if temp_video_path:
+            cleanup_temp_file(temp_video_path)
+            print(f"[CLEANUP] Archivo temporal eliminado")
 
-@app.post("/api/full-pipeline")
-async def full_pipeline(
-    video: UploadFile = File(...)
-) -> Dict[str, Any]:
+
+@app.post("/api/reset-history")
+async def reset_history():
     """
-    Complete pipeline: video translation + chatbot response.
-
-    This endpoint orchestrates the full flow:
-    1. Translate sign language video to text
-    2. Send translation to chatbot
-    3. Return both results
-
-    Currently returns dummy data. Will be replaced with actual pipeline.
-
-    Args:
-        video: Uploaded video file (multipart/form-data)
+    Reinicia el historial conversacional.
 
     Returns:
-        Dict with sign, confidence, and chat response
+        dict: Confirmación de reset
     """
-    try:
-        logger.info(f"POST /api/full-pipeline called - filename: {video.filename}")
-
-        # TODO: Step 1 - Translate video using VideoMAE model
-        # translation_result = await translate_video(video)
-
-        # TODO: Step 2 - Send translation to chatbot
-        # chat_result = await send_to_chatbot(translation_result["sign"])
-
-        # For now, return dummy data
-        return {
-            "sign": "placeholder_sign",
-            "confidence": 0.0,
-            "chat_response": "placeholder_chat_response"
-        }
-
-    except Exception as e:
-        logger.error(f"Error in /api/full-pipeline: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error processing full pipeline: {str(e)}"
-        )
+    conversation_history.reset()
+    return {
+        "status": "success",
+        "message": "Historial conversacional reiniciado",
+        "history": []
+    }
 
 
-# ============================================================================
-# Startup Event
-# ============================================================================
-
-@app.on_event("startup")
-async def startup_event() -> None:
+@app.get("/api/history")
+async def get_history():
     """
-    Run tasks on application startup.
-    Currently just logs that the server is ready.
+    Obtiene el historial conversacional actual.
+
+    Returns:
+        dict: Historial actual
     """
-    settings = get_settings()
-    print(f"\n{'='*60}")
-    print(f"{settings.APP_NAME} v{settings.APP_VERSION}")
-    print(f"{'='*60}")
-    print(f"Server running on: http://localhost:8000")
-    print(f"API docs available at: http://localhost:8000/docs")
-    print(f"Health check: http://localhost:8000/api/health")
-    print(f"Debug settings: http://localhost:8000/api/debug/settings")
-    print(f"{'='*60}\n")
+    return {
+        "history": conversation_history.get_history(),
+        "length": len(conversation_history)
+    }
+
+
+# === Ejecución ===
+
+if __name__ == "__main__":
+    import uvicorn
+
+    print("\n" + "="*70)
+    print(" INICIANDO SERVIDOR - TÓTEM LSCh API ".center(70))
+    print("="*70)
+    print(f"Host: {config.HOST}")
+    print(f"Puerto: {config.PORT}")
+    print(f"CORS Origins: {config.CORS_ORIGINS}")
+    print(f"Confianza mínima: {config.MIN_CONFIDENCE}")
+    print("="*70 + "\n")
+
+    uvicorn.run(
+        "main:app",
+        host=config.HOST,
+        port=config.PORT,
+        reload=True,  # Auto-reload en desarrollo
+        log_level="info"
+    )
