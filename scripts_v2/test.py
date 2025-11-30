@@ -124,7 +124,7 @@ def list_available_runs(checkpoint_dir: str = "models/v2/wlasl100_v2/checkpoints
 
         # Leer best_model.pt para obtener métricas
         try:
-            checkpoint = torch.load(best_model_path, map_location='cpu')
+            checkpoint = torch.load(best_model_path, map_location='cpu', weights_only=False)
 
             # Intentar múltiples claves posibles (compatibilidad con versiones anteriores)
             run_info["epoch"] = checkpoint.get('epoch', checkpoint.get('epochs', 'N/A'))
@@ -226,7 +226,7 @@ def get_checkpoint_from_run_id(run_id: int, checkpoint_dir: str = "models/v2/wla
 def load_model(checkpoint_path: str, device: str):
     """Carga modelo desde checkpoint"""
     print(f"[INFO] Cargando checkpoint: {checkpoint_path}")
-    checkpoint = torch.load(checkpoint_path, map_location=device)
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
 
     # Obtener configuración del modelo
     config_dir = Path(checkpoint_path).parent
@@ -739,7 +739,7 @@ def main(args):
     print("\n[INFO] Guardando resultados...")
 
     # Leer checkpoint info directamente del checkpoint para asegurar compatibilidad
-    checkpoint = torch.load(config["checkpoint_path"], map_location='cpu')
+    checkpoint = torch.load(config["checkpoint_path"], map_location='cpu', weights_only=False)
 
     epoch = checkpoint.get('epoch')
     if epoch is None:
