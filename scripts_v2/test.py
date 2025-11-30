@@ -68,14 +68,14 @@ DEFAULT_CONFIG = {
     "device": "cuda" if torch.cuda.is_available() else "cpu",
     "output_dir": "evaluation_results_v2",  # Resultados separados
     "top_k": [1, 3, 5],  # Top-K accuracy
-    "checkpoint_dir": "models_v2/checkpoints",  # Checkpoints v2
+    "checkpoint_dir": "models/v2/wlasl100_v2/checkpoints",  # Ruta corregida (coincide con entrenamiento)
 }
 
 
 # ============================================================
 #   FUNCIONES AUXILIARES
 # ============================================================
-def list_available_runs(checkpoint_dir: str = "models_v2/checkpoints"):
+def list_available_runs(checkpoint_dir: str = "models/v2/wlasl100_v2/checkpoints"):
     """
     Lista todos los runs disponibles con su información.
 
@@ -194,7 +194,7 @@ def print_available_runs(runs_info: list):
     print(f"{'='*80}\n")
 
 
-def get_checkpoint_from_run_id(run_id: int, checkpoint_dir: str = "models_v2/checkpoints") -> str:
+def get_checkpoint_from_run_id(run_id: int, checkpoint_dir: str = "models/v2/wlasl100_v2/checkpoints") -> str:
     """
     Obtiene la ruta del checkpoint dado un run_id.
 
