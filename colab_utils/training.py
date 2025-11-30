@@ -92,14 +92,36 @@ def train_one_epoch(model, dataloader, criterion, optimizer, scheduler, device, 
         videos = videos.to(device)
         labels = labels.to(device)
 
+        # === VALIDACIÓN DE DATOS DE ENTRADA ===
+        if torch.isnan(videos).any() or torch.isinf(videos).any():
+            print(f"\n[ERROR] Videos contienen NaN/Inf en batch {batch_idx}")
+            print(f"  Videos shape: {videos.shape}")
+            print(f"  NaN count: {torch.isnan(videos).sum().item()}")
+            print(f"  Inf count: {torch.isinf(videos).sum().item()}")
+            print(f"  Videos stats: min={videos[~torch.isnan(videos)].min():.3f}, max={videos[~torch.isnan(videos)].max():.3f}")
+            print(f"  Saltando batch corrupto...")
+            continue  # Saltar este batch y continuar
+
         outputs = model(pixel_values=videos)
         logits = outputs.logits
 
+        # === VALIDACIÓN DE LOGITS ===
+        if torch.isnan(logits).any() or torch.isinf(logits).any():
+            print(f"\n[ERROR] Logits contienen NaN/Inf en batch {batch_idx}")
+            print(f"  Videos stats: min={videos.min():.3f}, max={videos.max():.3f}")
+            print(f"  Logits shape: {logits.shape}")
+            print(f"  Labels: {labels[:5]}")
+            # Verificar pesos del modelo
+            for name, param in model.named_parameters():
+                if torch.isnan(param).any():
+                    print(f"  [!] Parámetro con NaN: {name}")
+            raise ValueError("Logits contienen NaN/Inf - posible problema con el modelo")
+
         loss = criterion(logits, labels)
 
-        # Check for NaN/Inf
+        # === VALIDACIÓN DE LOSS ===
         if torch.isnan(loss) or torch.isinf(loss):
-            print(f"\\n[ERROR] Loss es NaN/Inf en batch {batch_idx}")
+            print(f"\n[ERROR] Loss es NaN/Inf en batch {batch_idx}")
             print(f"  Logits stats: min={logits.min():.3f}, max={logits.max():.3f}")
             print(f"  Labels: {labels[:5]}")
             raise ValueError("Loss es NaN o Inf, deteniendo entrenamiento")
@@ -236,6 +258,21 @@ def train_model(config, train_loader, val_loader, train_dataset):
         print("✅ TODAS las 12 capas del modelo VideoMAE son entrenables")
 
     model.to(device)
+
+    # === VALIDAR QUE EL MODELO NO TIENE NaN ===
+    print("[INFO] Verificando inicialización del modelo...")
+    nan_params = []
+    for name, param in model.named_parameters():
+        if torch.isnan(param).any() or torch.isinf(param).any():
+            nan_params.append(name)
+
+    if nan_params:
+        print(f"[ERROR] Modelo tiene parámetros con NaN/Inf:")
+        for name in nan_params:
+            print(f"  - {name}")
+        raise ValueError("Modelo mal inicializado - contiene NaN/Inf")
+    else:
+        print("✅ Modelo inicializado correctamente (sin NaN/Inf)")
 
     # Contar parámetros
     total_params = sum(p.numel() for p in model.parameters())
