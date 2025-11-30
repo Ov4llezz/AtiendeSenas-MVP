@@ -27,7 +27,7 @@ def verify_dataset(dataset_path, dataset_name):
     }
 
     if not os.path.exists(dataset_path):
-        info['errors'].append(f"❌ Dataset no encontrado en {dataset_path}")
+        info['errors'].append(f"[X] Dataset no encontrado en {dataset_path}")
         return info
 
     info['exists'] = True
@@ -37,7 +37,7 @@ def verify_dataset(dataset_path, dataset_name):
     for dir_name in required_dirs:
         dir_path = os.path.join(dataset_path, dir_name)
         if not os.path.exists(dir_path):
-            info['errors'].append(f"❌ Directorio '{dir_name}' no encontrado")
+            info['errors'].append(f"[X] Directorio '{dir_name}' no encontrado")
 
     # Verificar splits
     splits_dir = os.path.join(dataset_path, 'splits')
@@ -63,7 +63,7 @@ def verify_dataset(dataset_path, dataset_name):
                 info['splits'][split_name] = len(lines)
                 info['total_videos'] += len(lines)
             else:
-                info['errors'].append(f"❌ Split '{split_file}' no encontrado")
+                info['errors'].append(f"[X] Split '{split_file}' no encontrado")
 
     # Verificar directorio de videos
     videos_dir = os.path.join(dataset_path, 'videos')
@@ -71,11 +71,18 @@ def verify_dataset(dataset_path, dataset_name):
         # Contar archivos .mp4
         video_files = list(Path(videos_dir).rglob('*.mp4'))
         actual_videos = len(video_files)
+        info['actual_videos'] = actual_videos
 
         # Verificar que coincidan con los splits
-        if actual_videos != info['total_videos']:
+        if actual_videos > info['total_videos']:
+            diff = actual_videos - info['total_videos']
             info['errors'].append(
-                f"⚠️ Videos en disco ({actual_videos}) no coinciden con splits ({info['total_videos']})"
+                f"[INFO] Hay {diff} videos extras en disco (Total: {actual_videos}, En splits: {info['total_videos']})"
+            )
+        elif actual_videos < info['total_videos']:
+            diff = info['total_videos'] - actual_videos
+            info['errors'].append(
+                f"[!] FALTAN {diff} videos en disco (Total: {actual_videos}, En splits: {info['total_videos']})"
             )
 
     return info
@@ -96,7 +103,7 @@ def verify_all_datasets(data_root="/home/ov4lle/AtiendeSenas-MVP/data"):
     ]
 
     print("=" * 80)
-    print(f"{'VERIFICACIÓN DE DATASETS':^80}")
+    print(f"{'VERIFICACION DE DATASETS':^80}")
     print("=" * 80)
     print(f"Ruta base: {data_root}\n")
 
@@ -104,33 +111,37 @@ def verify_all_datasets(data_root="/home/ov4lle/AtiendeSenas-MVP/data"):
         dataset_path = os.path.join(data_root, dataset_name)
         info = verify_dataset(dataset_path, dataset_name)
 
-        print(f"\n{'─' * 80}")
-        print(f"📁 {description}")
-        print(f"{'─' * 80}")
+        print(f"\n{'-' * 80}")
+        print(f"[Dataset] {description}")
+        print(f"{'-' * 80}")
 
         if info['exists']:
-            print(f"✅ Dataset encontrado")
-            print(f"📂 Ruta: {info['path']}")
+            print(f"[OK] Dataset encontrado")
+            print(f"Ruta: {info['path']}")
 
             if info['splits']:
-                print(f"\n📊 Splits:")
+                print(f"\nSplits:")
                 for split_name, count in info['splits'].items():
-                    print(f"  • {split_name:10s}: {count:4d} videos")
-                print(f"  {'─' * 40}")
-                print(f"  • {'TOTAL':10s}: {info['total_videos']:4d} videos")
+                    print(f"  - {split_name:10s}: {count:4d} videos")
+                print(f"  {'-' * 40}")
+                print(f"  - {'TOTAL':10s}: {info['total_videos']:4d} videos")
+
+                # Mostrar videos en disco si está disponible
+                if 'actual_videos' in info:
+                    print(f"  - {'En disco':10s}: {info['actual_videos']:4d} videos")
 
             if info['errors']:
-                print(f"\n⚠️ Advertencias/Errores:")
+                print(f"\nNotas:")
                 for error in info['errors']:
                     print(f"  {error}")
         else:
-            print(f"❌ Dataset NO encontrado")
+            print(f"[X] Dataset NO encontrado")
             if info['errors']:
                 for error in info['errors']:
                     print(f"  {error}")
 
     print(f"\n{'=' * 80}")
-    print(f"{'VERIFICACIÓN COMPLETADA':^80}")
+    print(f"{'VERIFICACION COMPLETADA':^80}")
     print(f"{'=' * 80}\n")
 
 
