@@ -1,0 +1,83 @@
+Quiero que me ayudes a actualizar y ordenar mi proyecto, usando un flujo basado en notebooks muy limpios + scripts Python externos.
+
+vamos a crear un nuevo notebook desde 0, para que este todo integrado correctamente.
+- Minimalista y limpio (como `colab_v1`): el notebook solo tiene celdas de configuración y “llamadas” a funciones; toda la lógica pesada está en scripts Python.
+
+tu ultimo correcion del notebook no funciono con v2, me dice que no encuentraron muestras para split=val, necesito que modifiquemos y hagamos el notebook final, es muy importante que sigas mis instrucciones:
+- estoy ejecutando en colab pero conectado a una instancia mv en entorno local, por ende si pones un !python, debe ser !python3 para que lo reconozca la MV
+-el datset lo clono desde mi drive, pero con shuty no con midirve de colab
+  -el dataser wlasl100v2 y wlasl300v2, ya contienen en train=(train+val)
+  -dataset wlasl100 y wlasl300, originales se mantienen tal cual
+  -la ruta de los dataset son "/home/ov4lle/AtiendeSenas-MVP/data/" (tanto en mi entrono de vm como aca en local, ambos son iguales en su contenido)
+
+-)configuracion inicial
+  -verificar gpu y entorno
+  -Verificar GPU con nvidia-smi
+  -uso de disco "!df -h"
+
+-)clonar repo
+  -de github
+  -clonar dataset 
+
+-)verificar dataset
+
+-)configurar hiperparametros y elegir dataset y version
+  -ojo con que si elijo v1 o v2, corran los scripts correcto de train y validacion correspondientes para cada V
+-)entrenar(que entrene con parametros configurados previamente)
+  -entrenamiento largo
+  -entrenamiento corto de prueba
+
+-)para evalaucion de modelo, primero listar todos los modelos disponibles, separados por v1 y v2 (implementaste esto en la correcion pero me dio error,que te datello a continuacion)
+    1) Qué cambiar en scripts/test.py (V1)
+      En scripts/test.py tengo un bloque llamado “NUMPY COMPATIBILITY PATCH (NumPy 1.x <-> 2.x)” al comienzo del archivo. Ahí:
+      Se define una clase _CoreModule con un método __getattr__ que reenvía atributos a np.core o np.
+      Luego se reasignan entradas en sys.modules para numpy._core, numpy._core.multiarray y numpy._core.umath. 
+      test
+      Este parche:
+      Es lo que dispara los DeprecationWarning sobre numpy.core / numpy._core.
+      Y es el responsable del RecursionError: maximum recursion depth exceeded while calling a Python object cuando scipy / sklearn importan cosas internas de NumPy, porque termina en un bucle entre el __getattr__ y los imports internos.
+      Instrucción precisa para Claude-Code (qué quiero que haga):
+      En scripts/test.py, elimina por completo la sección “NUMPY COMPATIBILITY PATCH (NumPy 1.x <-> 2.x)”, es decir:
+      La definición de la clase _CoreModule.
+      Todo el código que toca sys.modules['numpy._core'] y sus variantes (numpy._core.multiarray, numpy._core.umath, etc.).
+      Después de quitar ese bloque, deja el archivo funcionando sin ningún monkey patch a NumPy, usando solo los imports normales (import numpy as np, from sklearn.metrics ..., etc.).
+      Asegúrate de que, tras ese cambio, el script pueda:
+      Importar sklearn.metrics sin errores de recursión.
+      Ejecutarse sin necesidad de acceder a numpy.core o numpy._core directamente.
+      Si es necesario ajustar algo en el torch.load para compatibilidad de checkpoints con NumPy 2.x, hazlo ahí, pero sin reintroducir hacks sobre numpy._core.
+      Con eso le estás diciendo claramente: “el problema es este bloque, bórralo y deja todo lo demás igual”.
+
+    2) Qué cambiar en scripts_v2/test.py (V2)
+      Problema que debes describirle a Claude:
+      En scripts_v2/test.py importo directamente matplotlib.pyplot casi al inicio del archivo, sin configurar backend. 
+      test
+      En mi entorno, la variable de entorno MPLBACKEND viene seteada a module://matplotlib_inline.backend_inline (backend de Jupyter), y Matplotlib lanza:
+      ValueError: Key backend: 'module://matplotlib_inline.backend_inline' is not a valid value for backend
+      Es decir, el script falla al arrancar solo por el backend, aunque el resto del código está bien.
+      Instrucción precisa para Claude-Code (qué quiero que haga):
+      En scripts_v2/test.py, antes de la línea donde se importa matplotlib.pyplot, agrega una lógica para hacer robusto el backend de Matplotlib cuando el script se ejecuta fuera de Jupyter:
+      Leer la variable de entorno MPLBACKEND.
+      Si está configurada a module://matplotlib_inline.backend_inline (o a otro valor no soportado), limpiar esa variable o reemplazarla por un backend válido no interactivo.
+      Solo después de ajustar el backend, hacer el import de matplotlib/pyplot.
+      El objetivo es que:
+      El script se pueda ejecutar desde terminal aunque MPLBACKEND esté configurado para notebooks.
+      No se vuelva a producir el ValueError del backend, pero se mantenga el resto de la lógica de graficado tal como está.
+    esto corrigelo, en caso a que se deba a versiones de de librerias, considera que este notebook, sera ejecutado desde 0, asi que puedes actualziar librerias y todo lo necesario apra que funciones bien
+-)mantener idea de luego elegir el id para evaluar
+-)manter la idea de otra opcion de evaluar por path especifico
+
+-)mantener visializacion de resultados
+  -matriz de confusion
+  -metricas detalladas
+  -curvas de entrenamiento
+
+-) descargar resultados
+  -comprimir y descargar todo
+  -descargar archivos individualemente
+  -copia a google dirve
+
+-) utilidades
+  - monitoresa gpu
+  - limpiar gpu
+*esa es la estructura principal del notebook, puedes agregar cosas si lo consideras necesario para una buena ejecucion, 
+*analiza toda la estrcutura del proyecto relacionada con el entrenamineto y asegurate de que toda la implementacion sera correcta, puedes modicar todos los scripts que sean necesarios, recuerda diferencialos entre v1 y v2 para cda dataset si es necesario.

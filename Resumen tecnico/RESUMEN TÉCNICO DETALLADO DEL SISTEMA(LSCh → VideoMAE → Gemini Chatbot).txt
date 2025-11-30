@@ -1,0 +1,269 @@
+Aquí tienes un **resumen técnico extremadamente detallado**, pensado como **documento de respaldo** que define con precisión **qué debe hacer el sistema, cómo debe comportarse y qué requisitos funcionales debe cumplir**. No incluye código, solo especificaciones claras.
+
+---
+
+# ✅ **RESUMEN TÉCNICO DETALLADO DEL SISTEMA: Tótem de Autoatención para Personas Sordas (LSCh → VideoMAE → Gemini Chatbot)**
+
+Este documento establece las **características técnicas**, **funcionalidades obligatorias** y **criterios de correcto funcionamiento** del sistema completo, compuesto por:
+**reconocimiento de señas**, **procesamiento conversacional**, **backend FastAPI**, y **interfaz tipo tótem**.
+
+---
+
+# 1. **Objetivo General del Sistema**
+
+El sistema debe permitir que una persona Sorda pueda **comunicarse con un servicio de orientación en salud** mediante un tótem, usando **videos de señas** que el sistema interpreta como **palabras clave**, generando **respuestas empáticas, claras y útiles**, simulando una atención humana real.
+
+El flujo completo del sistema es:
+
+1. Usuario realiza una **seña** (video).
+2. Sistema reconoce la palabra correspondiente usando **VideoMAE**.
+3. Se envía esa palabra a un **chatbot basado en Gemini**, junto a un historial reciente.
+4. El chatbot genera una **respuesta natural**, contextualizada al entorno médico.
+5. La interfaz del tótem muestra:
+
+   * el video ingresado
+   * la palabra detectada
+   * la respuesta generada
+   * las latencias del sistema
+
+---
+
+# 2. **Requisitos Funcionales del Reconocimiento de Señas (VideoMAE)**
+
+### 2.1 Captura/Entrada
+
+* El sistema debe aceptar **un archivo de video** cargado por el usuario (no es en tiempo real).
+* Formatos mínimos aceptados: `.mp4`, `.mov`.
+* Modo de activación: **click en el recuadro central** → selector de archivos.
+
+### 2.2 Procesamiento
+
+* El modelo VideoMAE debe:
+
+  * Realizar inferencia sobre el video.
+  * Detectar **una sola palabra glosa en inglés** (debido a WLASL100).
+  * Retornar un valor de **confianza** entre 0 y 1.
+  * Entregar **latencia de procesamiento** en milisegundos.
+
+### 2.3 Manejo de errores
+
+* Si la confianza es **menor a 0.55**, el sistema NO debe enviar la palabra al chatbot.
+* En su lugar, debe retornar una respuesta fija:
+  *“No pude reconocer la seña claramente. ¿Puede repetirla?”*
+
+---
+
+# 3. **Requisitos Funcionales del Chatbot (Gemini)**
+
+*la API key de Gemini está almacenada en una variable de entorno del sistema llamada GEMINI_API_KEY.
+Cuando necesites usarla, debes obtenerla mediante os.environ["GEMINI_API_KEY"] (o os.getenv("GEMINI_API_KEY")) en lugar de hardcodearla en el código.
+No incluyas el valor explícito de la key ni lo escribas en ningún archivo.*
+
+### 3.1 Función principal
+
+Gemini debe transformar **palabras sueltas** en un **diálogo coherente**, **humano** y **contextualizado al entorno de salud en Chile**.
+
+### 3.2 Estilo conversacional obligatorio
+
+* Respuestas **empáticas**, amables y breves.
+* Máximo **2 oraciones cortas**.
+* Tono de **personal de salud/atención pública**, no técnico.
+* Lenguaje **en español de Chile**.
+* Lenguaje **no formal excesivo**, claro y directo.
+* Evitar:
+
+  * diagnósticos médicos
+  * recomendaciones de medicamentos
+  * tecnicismos innecesarios
+
+### 3.3 Uso del historial
+
+* El sistema debe mantener **las últimas 3 palabras detectadas**.
+* Gemini debe recibir:
+
+  * palabra actual
+  * historial corto (contexto conversacional)
+  * contexto fijo del servicio (“orientación médica en Chile”)
+
+### 3.4 Reglas conversacionales
+
+* Si la palabra equivale a saludo (“HELLO”, “HI”), el chatbot debe iniciar conversación.
+* Si la palabra equivale a cierre (“THANKS”, “THANK YOU”), el sistema debe **reiniciar historial**.
+* Gemini debe tolerar ambigüedad:
+
+  * Si recibe palabras poco claras (“HELP”), debe pedir aclaración.
+* Si recibe palabras conflictivas o incoherentes, debe dar respuestas seguras:
+
+  * *“¿Podría darme más contexto para entender mejor su situación?”*
+
+### 3.5 Latencia
+
+* Debe calcularse:
+
+  * latencia de VideoMAE
+  * latencia del chatbot
+  * latencia total del pipeline
+
+---
+
+# 4. **Requisitos Funcionales del Backend (FastAPI)**
+
+### 4.1 Endpoints mínimos
+
+Debe existir un endpoint principal:
+
+* **POST /api/full-pipeline**
+  Entrada:
+
+  * archivo de video
+  * historial previo
+    Salida:
+  * palabra detectada
+  * confianza
+  * respuesta del chatbot
+  * historial actualizado
+  * latencias
+
+### 4.2 Comportamiento obligatorio
+
+* Guardar temporalmente el video subido.
+* Enviar video a inferencia VideoMAE.
+* Manejar confianza baja.
+* Gestionar historial (máximo 3 palabras).
+* Resetear historial cuando corresponda.
+* Llamar a Gemini para generar respuesta.
+* Empaquetar resultados en un JSON estructurado.
+
+### 4.3 Seguridad básica
+
+* Validar tamaño de archivo.
+* Limitar tipos MIME permitidos.
+* Manejar errores de red o API.
+
+---
+
+# 5. **Requisitos Funcionales del Frontend (Interfaz tipo Tótem)**
+
+### 5.1 Diseño general (mínimo viable)
+
+* Estilo **minimalista**, accesible y apto para un tótem de salud.
+* Alto contraste visual.
+* Sin elementos distractores; énfasis en claridad.
+
+### 5.2 Distribución visual
+
+Pantalla principal debe contener:
+
+#### **A. Recuadro central grande**
+
+* Sirve para:
+
+  * subir el video
+  * reproducir el video cargado
+
+#### **B. Campo “Palabra detectada”**
+
+* Debe mostrar la glosa en español
+* Se actualiza tras cada inferencia exitosa
+
+#### **C. Campo “Respuesta del asistente”**
+
+* Texto generado por Gemini
+* Breve, claro, empático
+
+#### **D. Panel pequeño de latencias**
+
+Ubicado en una esquina (idealmente superior derecha):
+Debe mostrar:
+
+* “VideoMAE: XX ms”
+* “Chatbot: XX ms”
+* “Total: XX ms”
+
+Debe ocupar **menos del 10% de la pantalla**.
+
+### 5.3 Flujo de usuario
+
+1. Usuario toca recuadro → selecciona video.
+2. Se muestra el video cargado.
+3. Backend procesa y devuelve palabra + respuesta.
+4. La interfaz actualiza:
+
+   * palabra
+   * respuesta del chatbot
+   * latencias
+5. Usuario puede cargar otro video inmediatamente.
+
+### 5.4 Accesibilidad
+
+* Texto grande y claro.
+* Sin requerir audio.
+* Sin información dependiente del color.
+
+---
+
+# 6. **Requisitos de Operación del Sistema**
+
+### 6.1 Escenario real de tótem
+
+Debe funcionar para:
+
+* Centros de salud, consultorios, hospitales chilenos.
+* Atención rápida de orientación (no diagnósticos).
+
+### 6.2 Limitaciones asumidas (y reconocidas)
+
+* Dataset WLASL100 es ASL, no LSCh → vocabulario limitado.
+* Solo reconoce **una** palabra por video.
+* Chatbot debe compensar estos vacíos conversacionales.
+* No existe procesamiento gramatical de señas.
+* Toda la construcción del diálogo se deja a Gemini.
+
+---
+
+# 7. **Criterios de Correcto Funcionamiento**
+
+El sistema se considera funcionando correctamente si:
+
+1. Permite subir videos sin errores.
+2. VideoMAE entrega **una palabra** y una confianza.
+3. Maneja correctamente:
+
+   * errores de confianza baja
+   * reinicio de historial
+4. Gemini responde:
+
+   * en español chileno
+   * empáticamente
+   * sin términos médicos complejos
+   * con preguntas relevantes
+5. El frontend muestra:
+
+   * el video cargado
+   * palabra detectada
+   * respuesta
+   * latencias
+     Todo de forma limpia y minimalista.
+6. Todo el ciclo (video → respuesta) ocurre en **menos de ~2–3 segundos** idealmente.
+7. El sistema es robusto ante:
+
+   * palabras desconocidas
+   * videos ambiguos
+   * falta de historial
+
+
+# 8. **Resumen Ejecutivo (versión corta)**
+
+El sistema completo debe ser capaz de:
+
+* Recibir un video con una seña.
+* Detectar la palabra correspondiente.
+* Interpretarla en contexto médico usando un chatbot inteligente.
+* Generar una respuesta empática al usuario.
+* Mostrar todo en un tótem web minimalista.
+* Mantener historial de conversación mínimo.
+* Operar con claridad, rapidez y confiabilidad.
+
+*python3.10.0*
+
+**El modelo VideoMAE y su pipeline de inferencia ya están implementados; Claude-code solo debe integrarlos como módulo de inferencia (no entrenar ni modificar el modelo).**

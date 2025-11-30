@@ -35,6 +35,22 @@ from sklearn.metrics import (
     accuracy_score,
     precision_recall_fscore_support
 )
+
+# ============================================================
+#   MATPLOTLIB BACKEND FIX (para ejecución fuera de Jupyter)
+# ============================================================
+# Configurar backend no interactivo si estamos ejecutando desde terminal
+# Esto evita el error: ValueError: Key backend: 'module://matplotlib_inline.backend_inline' is not a valid value for backend
+import matplotlib
+mpl_backend = os.environ.get('MPLBACKEND', '')
+if 'matplotlib_inline' in mpl_backend or 'inline' in mpl_backend:
+    # Backend de Jupyter/IPython detectado - cambiar a Agg (no interactivo)
+    matplotlib.use('Agg')
+    print("[INFO] Backend de Matplotlib cambiado a 'Agg' (no interactivo)")
+elif not mpl_backend:
+    # No hay backend configurado - usar Agg por defecto
+    matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -776,8 +792,9 @@ if __name__ == "__main__":
     checkpoint_group.add_argument("--checkpoint_path", type=str, default=None,
                         help="Ruta específica al checkpoint (.pt) a evaluar")
     checkpoint_group.add_argument("--run-id", type=int, default=None,
-                        help="ID del run a evaluar (usa --list-runs para ver opciones)")
-    checkpoint_group.add_argument("--list-runs", action="store_true",
+                        help="ID del run a evaluar (usa --list para ver opciones)")
+    checkpoint_group.add_argument("--list-runs", "--list", action="store_true",
+                        dest="list_runs",
                         help="Listar todos los runs disponibles y salir")
 
     # Directorio de checkpoints

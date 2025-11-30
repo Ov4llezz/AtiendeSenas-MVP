@@ -14,29 +14,11 @@ Genera:
 """
 
 # ============================================================
-#   NUMPY COMPATIBILITY PATCH (NumPy 1.x <-> 2.x)
-# ============================================================
-import sys
-import numpy as np
-
-# Monkey patch: mapear numpy._core a numpy.core (para checkpoints de NumPy 2.x)
-class _CoreModule:
-    """Módulo dummy que redirige numpy._core a numpy.core"""
-    def __getattr__(self, name):
-        if hasattr(np.core, name):
-            return getattr(np.core, name)
-        if hasattr(np, name):
-            return getattr(np, name)
-        raise AttributeError(f"module 'numpy._core' has no attribute '{name}'")
-
-sys.modules['numpy._core'] = _CoreModule()
-sys.modules['numpy._core.multiarray'] = np.core.multiarray
-sys.modules['numpy._core.umath'] = np.core.umath
-
-# ============================================================
 #   IMPORTS
 # ============================================================
 import os
+import sys
+import numpy as np
 import argparse
 import json
 from datetime import datetime
@@ -55,6 +37,19 @@ from sklearn.metrics import (
     accuracy_score,
     precision_recall_fscore_support
 )
+
+# ============================================================
+#   MATPLOTLIB BACKEND FIX (para ejecución fuera de Jupyter)
+# ============================================================
+# Configurar backend no interactivo si estamos ejecutando desde terminal
+import matplotlib
+mpl_backend = os.environ.get('MPLBACKEND', '')
+if 'matplotlib_inline' in mpl_backend or 'inline' in mpl_backend:
+    matplotlib.use('Agg')
+    print("[INFO] Backend de Matplotlib cambiado a 'Agg' (no interactivo)")
+elif not mpl_backend:
+    matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -790,8 +785,9 @@ if __name__ == "__main__":
     checkpoint_group.add_argument("--checkpoint_path", type=str, default=None,
                         help="Ruta específica al checkpoint (.pt) a evaluar")
     checkpoint_group.add_argument("--run-id", type=int, default=None,
-                        help="ID del run a evaluar (usa --list-runs para ver opciones)")
-    checkpoint_group.add_argument("--list-runs", action="store_true",
+                        help="ID del run a evaluar (usa --list para ver opciones)")
+    checkpoint_group.add_argument("--list-runs", "--list", action="store_true",
+                        dest="list_runs",
                         help="Listar todos los runs disponibles y salir")
 
     # Directorio de checkpoints

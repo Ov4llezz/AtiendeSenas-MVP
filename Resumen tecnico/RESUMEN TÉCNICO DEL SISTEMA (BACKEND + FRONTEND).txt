@@ -1,0 +1,330 @@
+Perfecto, aquí tienes **un resumen técnico estructurado**, al mismo nivel de detalle que el del chatbot, pero ahora completamente enfocado en **backend + frontend**, su arquitectura, responsabilidades, flujos y requisitos.
+Este documento está pensado **para que Claude-code comprenda exactamente qué debe construir**, sin ambigüedades.
+
+---
+
+# ✅ **RESUMEN TÉCNICO DEL SISTEMA (BACKEND + FRONTEND)**
+
+### *Tótem de Autoatención para Personas Sordas – Reconocimiento de Señas + Conversación con Gemini*
+
+---
+
+# 1. **Objetivo General del Sistema**
+
+El sistema debe permitir que un usuario Sordo pueda **subir un video** de una seña, la cual es procesada por un modelo de reconocimiento (VideoMAE). El backend interpreta la seña como **palabra clave**, la envía al chatbot (Gemini), quien genera una **respuesta empática** orientada al contexto de **salud pública chilena**.
+La interfaz (frontend) simula un **tótem de autoatención**, mostrando video, palabra detectada, respuesta y latencias.
+
+---
+
+# 2. **Tecnologías Obligatorias**
+
+## **Backend**
+* obligatorio en Python 3.10.0
+* FastAPI (API REST principal)
+* Uvicorn (ASGI server)
+* PyTorch (modelo VideoMAE)
+* OpenCV o Decord (lectura de video)
+* Google Generative AI SDK (Gemini)
+* JSON como formato de respuesta
+* Estructura modular (separación clara de responsabilidades)
+
+## **Frontend**
+
+* React 18+
+* Vite + TypeScript
+* TailwindCSS o CSS minimalista
+* Axios para requests al backend
+* Interfaz tipo tótem, optimizada para atención en salud
+
+---
+
+# 3. **Arquitectura del Backend (FastAPI)**
+
+El backend debe estar dividido en **módulos independientes**, cada uno con responsabilidades claras:
+
+---
+
+## **3.1. Módulo de Ingreso de Video**
+
+Responsabilidades:
+
+* Recibir videos en un endpoint tipo `multipart/form-data`.
+* Validar:
+
+  * tipo de archivo (mp4/mov)
+  * tamaño máximo
+  * duración mínima
+  * que no esté corrupto
+* Guardar temporalmente el video para procesamiento.
+
+Resultados esperados:
+
+* Ruta local segura al archivo temporal.
+* Manejo claro de errores en subida (formato, tamaño, extensión, MIME).
+
+---
+
+## **3.2. Módulo de Procesamiento de Video**
+
+Responsabilidades:
+
+* Leer video desde ruta temporal.
+* Extraer frames uniformemente distribuidos (ej: 16 frames).
+* Redimensionar a 224x224 px.
+* Normalizar según estadísticas de VideoMAE.
+* Convertir a tensor compatible.
+
+Resultados esperados:
+
+* Tensor listo para inferencia.
+* Manejo de videos mal formados o de duración insuficiente.
+
+---
+
+## **3.3. Módulo de Inferencia (VideoMAE)**
+
+Responsabilidades:
+
+* Cargar modelo VideoMAE una sola vez en memoria.
+* Recibir tensor y devolver:
+
+  * `predicted_word` (glosa en inglés)
+  * `confidence` (0 a 1)
+  * `latency_ms` (tiempo de ejecución)
+
+Reglas:
+
+* Si la confianza es **< 0.55**, el sistema NO debe llamar al chatbot.
+* En esa situación devolver:
+
+  * respuesta base: “No pude reconocer la seña…”
+  * historial sin cambios
+  * latencia de chatbot = 0
+
+Resultados esperados:
+
+* Alta estabilidad en inferencia.
+* Latencia razonable (< ~2 segundos en PoC).
+
+---
+
+## **3.4. Módulo de Historial Conversacional**
+
+Responsabilidades:
+
+* Mantener un historial de **máximo 3 glosas previas**.
+* Agregar nueva glosa solo si la confianza es suficiente.
+* Resetear historial cuando:
+
+  * se detecta saludo ("HELLO", "HI")
+  * se detecta cierre ("THANKS", "THANK YOU")
+* Enviar historial actualizado al frontend.
+
+Resultados esperados:
+
+* Contexto conversacional corto y eficiente.
+* Evitar prompts demasiado largos.
+
+---
+
+## **3.5. Módulo Chatbot (Gemini)**
+
+Responsabilidades:
+
+* Construir prompt basado en:
+
+  * glosa actual
+  * historial de 3 glosas
+  * contexto fijo de salud en Chile
+* Enviar el prompt a Gemini usando el SDK.
+* Recibir texto como respuesta.
+* Garantizar:
+
+  * máximo 2 oraciones
+  * tono empático
+  * español chileno
+  * lenguaje orientado a salud
+* Manejar errores de red o timeout generando respuesta fallback segura.
+
+Resultados esperados:
+
+* Respuesta coherente, breve, adecuada a contexto médico.
+* Evitar diagnósticos médicos o elaboración excesiva.
+
+---
+
+## **3.6. Módulo del Endpoint Principal**
+
+Formato de respuesta del endpoint /api/full-pipeline
+- La respuesta del endpoint debe tener siempre la siguiente estructura lógica:
+- predicted_word (string): palabra/glosa detectada por VideoMAE (en inglés, por ejemplo "PAIN").
+- confidence (float): confianza del modelo entre 0 y 1.
+- chatbot_response (string): respuesta generada por Gemini en español, breve y empática.
+- history (lista de strings): lista de glosas recientes, con un máximo de 3 elementos.
+- latency_ms (objeto/diccionario) con:
+- videomae (float): tiempo de inferencia del modelo de video en milisegundos.
+- chatbot (float): tiempo de respuesta del chatbot en milisegundos.
+- total (float): tiempo total del pipeline en milisegundos.
+
+El endpoint `/api/full-pipeline` debe:
+
+### Entrada:
+
+* Video cargado por el usuario.
+* Historial previo serializado (si existe).
+
+### Salida:
+
+Debe incluir obligatoriamente:
+
+* `predicted_word`
+* `confidence`
+* `chatbot_response`
+* `history` actualizado
+* `latency_ms`:
+
+  * videomae
+  * chatbot
+  * total
+
+### Reglas:
+
+* Debe ejecutar **todo el pipeline** de forma ordenada y atomic.
+* Debe manejar correctamente:
+
+  * baja confianza
+  * errores del chatbot
+  * videos inválidos
+
+Resultados esperados:
+
+* JSON consistente y estándar.
+* Estabilidad en todas las rutas críticas.
+
+---
+
+# 4. **Arquitectura del Frontend (React)**
+
+El frontend debe simular una **experiencia de tótem real**, diseñada para personas Sordas.
+
+---
+
+## **4.1. Estructura General**
+
+Componentes principales:
+
+### **1. VideoUploader**
+
+* Recuadro central grande.
+* textos visibles para el usuario final (placeholders, labels, botones) deben estar en español
+* Permite al usuario cargar un video haciendo click.
+* Muestra preview del video cargado.
+* Valida formato/tamaño.
+* Envía video al backend cuando el usuario confirma.
+
+### **2. PredictionDisplay**
+
+* Muestra “Palabra detectada: <glosa>”.
+* Muestra porcentaje de confianza.
+* Usa color de estado (verde/amarillo/rojo) según confianza.
+
+### **3. ChatResponseDisplay**
+
+* Muestra la respuesta del chatbot en texto claro y grande.
+* Estilo conversacional (no técnico).
+* Bien centrado debajo del video.
+
+### **4. LatencyPanel**
+
+* Ubicado en una esquina (preferiblemente superior derecha).
+* Tamaño pequeño (<10% pantalla).
+* Muestra:
+
+  * `VideoMAE: XX ms`
+  * `Chatbot: XX ms`
+  * `Total: XX ms`
+
+### **5. LoadingIndicator**
+
+* Aparece mientras el backend procesa el video.
+* Se oculta automáticamente al recibir la respuesta.
+
+---
+
+## **4.2. Flujo de Usuario en el Tótem**
+
+1. Usuario toca el recuadro central.
+2. Carga un archivo de video.
+3. Video se muestra inmediatamente.
+4. Interfaz entra en estado “Procesando…”.
+5. Backend devuelve predicción + respuesta.
+6. Pantalla se actualiza mostrando:
+
+   * palabra detectada
+   * respuesta del asistente
+   * panel de latencias
+7. El usuario puede subir otro video inmediatamente.
+
+---
+
+## **4.3. Requisitos de Diseño**
+
+* Interfaz minimalista, amigable y accesible.
+* Todo en español claro.
+* No requiere audio.
+* Tipografías grandes y de alto contraste.
+* Ninguna funcionalidad debe depender de uso de teclado.
+
+---
+
+# 5. **Requisitos no funcionales**
+
+### **Rendimiento**
+
+* Latencia total del pipeline ideal < 2.5 s (PoC).
+* El backend debe mantener el modelo cargado en memoria.
+* Gemini debe responder en menos de 1 s.
+
+### **Escalabilidad**
+
+* Backend modular permite escalar a cámaras en tiempo real en el futuro.
+* Frontend aislado, puede convertirse en app móvil o tótem físico.
+
+### **Seguridad**
+
+* Validación estricta de archivos.
+* Sanitización de inputs.
+* Manejo de excepciones en todas las etapas.
+
+### **Confiabilidad**
+
+* El sistema debe seguir funcionando incluso si:
+
+  * el chatbot falla
+  * el video es ambiguo
+  * el historial contiene ruido
+
+En esos casos → mensaje fallback seguro.
+
+En caso de error de backend, el frontend debe mostrar mensajes como:
+- “Hubo un problema al procesar el video. Por favor intente nuevamente.”
+- “Formato de archivo no soportado. Use un video mp4 o mov.”
+
+---
+
+# 6. **Resumen Ejecutivo Técnico (para Claude-code)**
+
+> Construir un sistema compuesto de frontend y backend que:
+>
+> * Reciba videos subidos vía interfaz tipo tótem.
+> * Procese el video con VideoMAE para extraer palabra.
+> * Mantenga historial corto de 3 señas.
+> * Llame a Gemini usando prompts controlados para generar respuestas empáticas en contexto de salud.
+> * Devuelva un JSON estructurado con palabra, confianza, respuesta y latencias.
+> * Muestre la respuesta en un frontend minimalista, accesible, con recuadro de video y panel de latencias.
+> * Sea modular: inferencia, preprocesamiento, chatbot, API, UI.
+> * Maneje baja confianza, errores y reset conversacional.
+
+El sistema debe exponer el backend únicamente a través de un puerto seguro (HTTPS 443) detrás de un reverse proxy, manteniendo los puertos internos restringidos a la red local. Toda comunicación entre el tótem y el backend se realiza mediante HTTPS, con un certificado TLS válido. El backend debe implementar políticas CORS estrictas, permitiendo solo los orígenes correspondientes al frontend oficial (localhost en desarrollo y los dominios productivos en operación). Además, todas las credenciales sensibles, como la API key de Gemini, se almacenan de forma segura (variables de entorno/gestor de secretos) y nunca se incluyen directamente en el código.
+
+**El modelo VideoMAE y su pipeline de inferencia ya están implementados; Claude-code solo debe integrarlos como módulo de inferencia (no entrenar ni modificar el modelo).**
