@@ -63,6 +63,20 @@ def sample_frames_uniform(video_path: str, num_frames: int = NUM_FRAMES):
         ret, frame = cap.read()
         if not ret or frame is None:
             continue
+
+        # === VALIDACIÓN DE FRAME ===
+        # Verificar que frame tenga valores razonables
+        if np.isnan(frame).any() or np.isinf(frame).any():
+            print(f"[WARN] Frame {idx} con NaN/Inf en {video_path} - saltando")
+            continue
+
+        # Verificar rango de valores (deben estar en [0, 255] para uint8)
+        if frame.min() < 0 or frame.max() > 255:
+            print(f"[WARN] Frame {idx} con valores fuera de rango en {video_path}")
+            # Clip a rango válido
+            frame = np.clip(frame, 0, 255).astype(np.uint8)
+
+        # Convertir de BGR a RGB
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         frames.append(frame)
 
@@ -216,6 +230,22 @@ class WLASLVideoDataset(Dataset):
 
             frames_t = [self.transform(f) for f in frames]
             video_tensor = torch.stack(frames_t, dim=0)     # (T, C, H, W)
+
+            # === VALIDACIÓN DEL VIDEO TENSOR ===
+            # Verificar que video_tensor no tenga NaN/Inf
+            if torch.isnan(video_tensor).any() or torch.isinf(video_tensor).any():
+                print(f"[WARN] Video tensor con NaN/Inf: {video_path} - saltando")
+                idx = (idx + 1) % len(self.samples)
+                continue
+
+            # Verificar rango razonable después de normalización
+            # Después de Normalize con mean=[0.485,0.456,0.406], std=[0.229,0.224,0.225]
+            # Los valores deberían estar aproximadamente en [-3, 3]
+            tensor_max = video_tensor.abs().max().item()
+            if tensor_max > 50:  # Umbral conservador
+                print(f"[WARN] Video tensor con valores explosivos: {video_path} (max={tensor_max:.2f})")
+                # Clip a rango seguro
+                video_tensor = torch.clamp(video_tensor, min=-10, max=10)
 
             return video_tensor, torch.tensor(label, dtype=torch.long)
 
