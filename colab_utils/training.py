@@ -94,37 +94,44 @@ def train_one_epoch(model, dataloader, criterion, optimizer, scheduler, device, 
 
         # === VALIDACIÓN DE DATOS DE ENTRADA ===
         if torch.isnan(videos).any() or torch.isinf(videos).any():
-            print(f"\n[ERROR] Videos contienen NaN/Inf en batch {batch_idx}")
-            print(f"  Videos shape: {videos.shape}")
-            print(f"  NaN count: {torch.isnan(videos).sum().item()}")
-            print(f"  Inf count: {torch.isinf(videos).sum().item()}")
-            print(f"  Videos stats: min={videos[~torch.isnan(videos)].min():.3f}, max={videos[~torch.isnan(videos)].max():.3f}")
-            print(f"  Saltando batch corrupto...")
-            continue  # Saltar este batch y continuar
+            print(f"\n[WARN] Batch {batch_idx}: Videos con NaN/Inf detectados - SALTANDO")
+            print(f"  NaN: {torch.isnan(videos).sum().item()}, Inf: {torch.isinf(videos).sum().item()}")
+            continue
 
-        outputs = model(pixel_values=videos)
-        logits = outputs.logits
+        # === FORWARD PASS CON PROTECCIÓN ===
+        try:
+            outputs = model(pixel_values=videos)
+            logits = outputs.logits
 
-        # === VALIDACIÓN DE LOGITS ===
-        if torch.isnan(logits).any() or torch.isinf(logits).any():
-            print(f"\n[ERROR] Logits contienen NaN/Inf en batch {batch_idx}")
-            print(f"  Videos stats: min={videos.min():.3f}, max={videos.max():.3f}")
-            print(f"  Logits shape: {logits.shape}")
-            print(f"  Labels: {labels[:5]}")
-            # Verificar pesos del modelo
-            for name, param in model.named_parameters():
-                if torch.isnan(param).any():
-                    print(f"  [!] Parámetro con NaN: {name}")
-            raise ValueError("Logits contienen NaN/Inf - posible problema con el modelo")
+            # === VALIDACIÓN Y CLIPPING DE LOGITS ===
+            # Detectar valores explosivos ANTES de que causen problemas
+            logits_max = logits.abs().max().item()
 
+            if logits_max > 1e10 or torch.isnan(logits).any() or torch.isinf(logits).any():
+                print(f"\n[WARN] Batch {batch_idx}: Logits explosivos detectados")
+                print(f"  Max logit: {logits_max:.2e}")
+                print(f"  Videos range: [{videos.min():.3f}, {videos.max():.3f}]")
+                print(f"  SALTANDO batch problemático...")
+                continue
+
+            # Clipping de seguridad para logits (prevenir explosión)
+            logits = torch.clamp(logits, min=-100, max=100)
+
+        except RuntimeError as e:
+            print(f"\n[ERROR] Batch {batch_idx}: Error en forward pass - {e}")
+            print(f"  SALTANDO batch...")
+            continue
+
+        # === CALCULAR LOSS ===
         loss = criterion(logits, labels)
 
         # === VALIDACIÓN DE LOSS ===
-        if torch.isnan(loss) or torch.isinf(loss):
-            print(f"\n[ERROR] Loss es NaN/Inf en batch {batch_idx}")
-            print(f"  Logits stats: min={logits.min():.3f}, max={logits.max():.3f}")
-            print(f"  Labels: {labels[:5]}")
-            raise ValueError("Loss es NaN o Inf, deteniendo entrenamiento")
+        if torch.isnan(loss) or torch.isinf(loss) or loss.item() > 1e10:
+            print(f"\n[WARN] Batch {batch_idx}: Loss inválido detectado")
+            print(f"  Loss: {loss.item():.2e}")
+            print(f"  Logits range: [{logits.min():.3f}, {logits.max():.3f}]")
+            print(f"  SALTANDO batch...")
+            continue
 
         batch_acc = calculate_accuracy(logits, labels)
 
@@ -241,6 +248,24 @@ def train_model(config, train_loader, val_loader, train_dataset):
         num_labels=config['num_classes'],
         ignore_mismatched_sizes=True
     )
+
+    # === REINICIALIZAR CLASSIFIER HEAD CON PESOS CONSERVADORES ===
+    # Esto previene logits explosivos desde el inicio
+    print("[INFO] Reinicializando classifier head con std=0.01...")
+    if hasattr(model, 'classifier'):
+        nn.init.normal_(model.classifier.weight, mean=0.0, std=0.01)
+        if model.classifier.bias is not None:
+            nn.init.zeros_(model.classifier.bias)
+        print("✅ Classifier head reinicializado (std=0.01)")
+    else:
+        print("[WARN] No se encontró 'classifier' - verificando estructura del modelo...")
+        # Buscar la última capa linear
+        for name, module in model.named_modules():
+            if isinstance(module, nn.Linear) and 'classifier' in name.lower():
+                nn.init.normal_(module.weight, mean=0.0, std=0.01)
+                if module.bias is not None:
+                    nn.init.zeros_(module.bias)
+                print(f"✅ Capa '{name}' reinicializada (std=0.01)")
 
     # === Configurar capas entrenables ===
     freeze_backbone = config.get('freeze_backbone', False)
