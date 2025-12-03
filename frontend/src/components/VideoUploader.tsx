@@ -67,9 +67,10 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({ onVideoSelect, disabled }
         className={`
           relative border-4 border-dashed rounded-xl overflow-hidden
           bg-gray-50 transition-all duration-200
-          ${disabled ? 'border-gray-300 cursor-not-allowed opacity-60' : 'border-blue-400 cursor-pointer hover:border-blue-500 hover:bg-blue-50'}
+          ${disabled ? 'border-gray-300 cursor-not-allowed opacity-60' : 'cursor-pointer hover:opacity-90'}
           ${videoPreview ? 'aspect-video' : 'h-96'}
         `}
+        style={!disabled ? { borderColor: '#95B5CF' } : {}}
       >
         {videoPreview ? (
           /* Preview del video */

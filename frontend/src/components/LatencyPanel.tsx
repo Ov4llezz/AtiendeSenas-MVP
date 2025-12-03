@@ -43,7 +43,7 @@ const LatencyPanel: React.FC<LatencyPanelProps> = ({ latency }) => {
         <div className="border-t border-gray-200 pt-1 mt-1">
           <div className="flex justify-between items-center">
             <span className="text-gray-700 font-semibold">Total:</span>
-            <span className="font-mono font-bold text-blue-600">
+            <span className="font-mono font-bold" style={{ color: '#1E4B7D' }}>
               {latency.total.toFixed(0)} ms
             </span>
           </div>

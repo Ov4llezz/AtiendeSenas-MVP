@@ -12,11 +12,11 @@ interface ChatResponseDisplayProps {
 const ChatResponseDisplay: React.FC<ChatResponseDisplayProps> = ({ response }) => {
   return (
     <div className="w-full max-w-3xl mx-auto mt-6">
-      <div className="bg-white border-2 border-blue-200 rounded-xl p-8 shadow-lg">
+      <div className="bg-white border-2 rounded-xl p-8 shadow-lg" style={{ borderColor: '#95B5CF' }}>
         {/* Icono del asistente */}
         <div className="flex items-start gap-4">
           <div className="flex-shrink-0">
-            <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#1E4B7D' }}>
               <svg
                 className="w-7 h-7 text-white"
                 fill="none"

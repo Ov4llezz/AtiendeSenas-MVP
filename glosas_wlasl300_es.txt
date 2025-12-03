@@ -1,0 +1,302 @@
+# WLASL300 - Glosas (Glosses) con traducción al español
+# Total de clases: 298
+# Formato: ID | Glosa (Inglés) | Traducción (Español)
+================================================================================
+0 | before                    | antes
+1 | cool                      | genial
+2 | thin                      | delgado/delgada
+3 | drink                     | beber
+4 | go                        | ir
+5 | computer                  | computadora
+6 | cousin                    | primo/prima
+7 | help                      | ayudar
+8 | who                       | quién
+9 | accident                  | accidente
+10 | bed                      | cama
+11 | bowling                  | bolos
+12 | candy                    | dulce
+13 | short                    | corto/corta
+14 | tall                     | alto/alta
+15 | thanksgiving             | Día de Acción de Gracias
+16 | trade                    | comercio / intercambiar
+17 | basketball               | baloncesto
+18 | call                     | llamar
+19 | change                   | cambiar
+20 | cold                     | frío/fría
+21 | corn                     | maíz
+22 | dark                     | oscuro/oscura
+23 | last                     | último/última
+24 | later                    | después / más tarde
+25 | man                      | hombre
+26 | pizza                    | pizza
+27 | shirt                    | camisa
+28 | what                     | qué
+29 | yes                       | sí
+30 | apple                     | manzana
+31 | bar                       | bar
+32 | brother                   | hermano
+33 | champion                  | campeón/campeona
+34 | check                     | verificar
+35 | deaf                      | sordo/sorda
+36 | delay                     | retraso / retrasar
+37 | dog                       | perro
+38 | environment               | ambiente / entorno
+39 | example                   | ejemplo
+40 | family                    | familia
+41 | far                       | lejos
+42 | laugh                     | reír
+43 | leave                     | irse / dejar
+44 | letter                    | carta
+45 | mother                    | madre
+46 | no                        | no
+47 | play                      | jugar
+48 | room                      | habitación
+49 | score                     | puntaje
+50 | soon                      | pronto
+51 | take                      | tomar / llevar
+52 | thursday                  | jueves
+53 | walk                      | caminar
+54 | why                       | por qué
+55 | woman                     | mujer
+56 | appointment               | cita
+57 | argue                     | discutir
+58 | bad                       | malo/mala
+59 | balance                   | equilibrio / balance
+60 | because                   | porque
+61 | bird                      | pájaro
+62 | black                     | negro/negra
+63 | blanket                   | manta / frazada
+64 | cheat                     | hacer trampa
+65 | convince                  | convencer
+66 | cry                       | llorar
+67 | daughter                  | hija
+68 | delicious                 | delicioso/deliciosa
+69 | doctor                    | doctor/doctora
+70 | fat                       | gordo/gorda
+71 | fish                      | pez / pescar
+72 | full                      | lleno/llena
+73 | give                      | dar
+74 | good                      | bueno/buena
+75 | government                | gobierno
+76 | graduate                  | graduarse
+77 | hot                       | caliente
+78 | interest                  | interés
+79 | language                  | idioma
+80 | like                      | gustar
+81 | many                      | muchos/muchas
+82 | move                      | mover / mudarse
+83 | orange                    | naranja
+84 | order                     | ordenar
+85 | perspective               | perspectiva
+86 | ready                     | listo/lista
+87 | sandwich                  | sándwich
+88 | secretary                 | secretario/secretaria
+89 | silly                     | tonto/tonta
+90 | snow                      | nieve
+91 | son                       | hijo
+92 | speech                    | discurso
+93 | study                     | estudiar
+94 | sweet                     | dulce
+95 | tell                      | decir
+96 | theory                    | teoría
+97 | toast                     | tostada
+98 | wait                      | esperar
+99 | white                     | blanco/blanca
+100 | work                     | trabajar
+101 | write                    | escribir
+102 | year                     | año
+103 | yesterday                | ayer
+104 | add                      | agregar
+105 | africa                   | África
+106 | ago                      | hace (tiempo)
+107 | alone                    | solo/sola
+108 | animal                   | animal
+109 | australia                | Australia
+110 | baby                     | bebé
+111 | ball                     | pelota
+112 | balloon                  | globo
+113 | banana                   | banana
+114 | barely                   | apenas
+115 | beard                    | barba
+116 | big                      | grande
+117 | buy                      | comprar
+118 | california               | California
+119 | can                      | poder
+120 | careful                  | cuidadoso/cuidadosa
+121 | carrot                   | zanahoria
+122 | catch                    | atrapar
+123 | cat                      | gato
+124 | chat                     | charlar / conversar
+125 | child                    | niño/niña
+126 | city                     | ciudad
+127 | class                    | clase
+128 | correct                  | correcto/correcta
+129 | country                  | país
+130 | cow                      | vaca
+131 | crash                    | chocar / choque
+132 | day                      | día
+133 | decide                   | decidir
+134 | decorate                 | decorar
+135 | dirty                    | sucio/sucia
+136 | dive                     | bucear
+137 | drop                     | dejar caer
+138 | dry                      | seco/seca
+139 | fast                     | rápido/rápida
+140 | fault                    | culpa / falla
+141 | fine                     | bien
+142 | finish                   | terminar
+143 | first                    | primero/primera
+144 | follow                   | seguir
+145 | football                 | fútbol americano
+146 | form                     | formulario / forma
+147 | future                   | futuro/futura
+148 | girl                     | niña
+149 | glasses                  | gafas / lentes
+150 | grammar                  | gramática
+151 | great                    | genial / grandioso
+152 | hair                     | cabello
+153 | halloween                | Halloween
+154 | hat                      | sombrero
+155 | headache                 | dolor de cabeza
+156 | hear                     | oír
+157 | hope                     | esperanza
+158 | how                      | cómo
+159 | improve                  | mejorar
+160 | inform                   | informar
+161 | kiss                     | beso
+162 | list                     | lista
+163 | lose                     | perder
+164 | make                     | hacer
+165 | meet                     | conocer / reunirse
+166 | minute                   | minuto
+167 | near                     | cerca
+168 | necklace                 | collar
+169 | new                      | nuevo/nueva
+170 | now                      | ahora
+171 | office                   | oficina
+172 | outside                  | afuera
+173 | party                    | fiesta
+174 | past                     | pasado/pasada
+175 | pink                     | rosa
+176 | point                    | señalar / punto
+177 | practice                 | practicar
+178 | president                | presidente/presidenta
+179 | problem                  | problema
+180 | pull                     | jalar
+181 | right                    | derecha / correcto
+182 | same                     | mismo/misma
+183 | school                   | escuela
+184 | shock                    | sorpresa / shock
+185 | show                     | mostrar
+186 | sign                     | señal / signo
+187 | stay                     | quedarse
+188 | tiger                    | tigre
+189 | today                    | hoy
+190 | town                     | pueblo
+191 | train                    | tren / entrenar
+192 | travel                   | viajar
+193 | ugly                     | feo/fea
+194 | upset                    | molesto/molesta
+195 | visit                    | visitar
+196 | voice                    | voz
+197 | vomit                    | vomitar
+198 | want                     | querer
+199 | water                    | agua
+200 | weekend                  | fin de semana
+201 | week                     | semana
+202 | wet                      | mojado/mojada
+203 | wow                      | guau / wow
+204 | accept                   | aceptar
+205 | again                    | otra vez / de nuevo
+206 | allergy                  | alergia
+207 | all                      | todo/toda
+208 | allow                    | permitir
+209 | already                  | ya
+210 | analyze                  | analizar
+211 | approve                  | aprobar
+212 | arrive                    | llegar
+213 | awful                     | terrible / pésimo
+214 | backpack                  | mochila
+215 | bark                      | ladrar
+216 | beer                      | cerveza
+217 | bitter                    | amargo/amarga
+218 | blind                     | ciego/ciega
+219 | blue                      | azul
+220 | boat                      | bote / barco
+221 | bother                    | molestar
+222 | bottom                    | fondo
+223 | boy                       | niño
+224 | bring                     | traer
+225 | brown                     | marrón / café
+226 | cafeteria                 | cafetería
+227 | cake                      | pastel / torta
+228 | cancel                    | cancelar
+229 | card                      | tarjeta
+230 | cereal                    | cereal
+233 | christmas                 | Navidad
+234 | close                     | cerrar
+235 | cloud                     | nube
+236 | color                     | color
+237 | come here                 | ven aquí
+238 | cook                      | cocinar
+239 | cookie                    | galleta
+240 | cop                       | policía
+241 | copy                      | copiar
+242 | cut                       | cortar
+243 | deep                      | profundo/profunda
+244 | demand                    | exigir / demanda
+245 | dentist                   | dentista
+246 | dessert                   | postre
+247 | develop                   | desarrollar
+248 | different                 | diferente
+249 | disconnect                | desconectar
+250 | discuss                   | discutir
+251 | dollar                    | dólar
+252 | down                      | abajo
+253 | dress                     | vestido
+254 | ear                       | oreja
+255 | east                      | este
+256 | enjoy                     | disfrutar
+257 | escape                    | escapar
+258 | exchange                  | intercambiar
+259 | expensive                 | caro/cara
+260 | face                      | cara
+261 | farm                      | granja
+262 | find                      | encontrar
+263 | fly                       | volar
+264 | front                     | frente / delantero
+265 | group                     | grupo
+266 | happy                     | feliz
+267 | hearing                   | oyente / que oye
+268 | heart                     | corazón
+269 | helicopter                | helicóptero
+270 | her                       | ella / su (de ella)
+271 | history                   | historia
+272 | humble                    | humilde
+273 | idea                      | idea
+274 | important                 | importante
+275 | internet                  | internet
+276 | jealous                   | celoso/celosa
+277 | join                      | unirse
+278 | know                      | saber / conocer
+279 | late                      | tarde
+280 | learn                     | aprender
+281 | lemon                     | limón
+282 | light                     | luz / ligero
+283 | match                     | partido / combinar
+284 | mean                      | significar
+285 | meat                      | carne
+286 | medicine                  | medicina
+287 | mirror                    | espejo
+288 | miss                      | extrañar / perder
+289 | more                      | más
+290 | music                     | música
+291 | one                       | uno/una
+292 | onion                     | cebolla
+293 | overwhelm                 | abrumar
+294 | pants                     | pantalones
+295 | paper                     | papel
+296 | police                    | policía
+297 | possible                  | posible
+298 | postpone                  | posponer
+299 | potato                    | papa 

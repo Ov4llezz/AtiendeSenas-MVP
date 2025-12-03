@@ -1,0 +1,172 @@
+# TAREA: Extraer información técnica para Capítulo III de Tesis
+
+## Contexto
+Estoy escribiendo el Capítulo III (Ingeniería del Proyecto) de mi tesis de Ingeniería en Automatización y Robótica. Necesito que extraigas información técnica DETALLADA de todo el repositorio para que otro agente la redacte académicamente.
+
+## Estructura del Capítulo III que debo completar
+
+### III.1 Propósito y alcance del capítulo ✅ (YA TENGO)
+
+### III.2 Arquitectura general del sistema ✅ (YA TENGO, pero revisar)
+**Extrae:**
+- Diagrama de arquitectura (ubicación del archivo)
+- Stack tecnológico completo con versiones exactas
+- Flujo de datos detallado (paso a paso)
+- Justificación técnica de cada decisión arquitectónica
+
+### III.3 Adquisición y preprocesamiento del dataset WLASL ✅ (YA TENGO, pero revisar)
+**Extrae:**
+- Pipeline de preprocesamiento (código + parámetros)
+- Data augmentation: transformaciones EXACTAS con parámetros
+
+### III.4 Diseño del modelo VideoMAE (COMPLETAR SUBSECCIONES)
+**Para III.4.1 - Arquitectura VideoMAE:**
+- Diagrama de arquitectura del modelo (si existe)
+- Número de capas, parámetros, configuración del encoder/decoder
+- Modelo base usado (MCG-NJU/videomae-base o cuál exactamente)
+
+**Para III.4.2 - Estrategia de transfer learning (FALTA):**
+- Modelo preentrenado base (Kinetics-400)
+- Qué capas se congelaron vs se entrenaron
+- Justificación de la estrategia
+
+**Para III.4.3 - Configuración de hiperparámetros (FALTA):**
+```python
+# Extrae TODOS los hiperparámetros exactos del entrenamiento:
+- learning_rate = ?
+- batch_size = ?
+- num_epochs = ?
+- optimizer = ? (Adam, AdamW, etc.)
+- weight_decay = ?
+- label_smoothing = ?
+- dropout = ?
+- lr_scheduler = ? (tipo y parámetros)
+- warmup_steps = ?
+- gradient_clipping = ?
+- early_stopping = ? (patience, delta)
+```
+
+**Para III.4.4 - Fine-tuning en WLASL (FALTA):**
+- Script de entrenamiento completo
+- Función de pérdida usada
+- Cómo se modificó la capa de clasificación final
+- Estrategias de regularización aplicadas
+- Hardware usado (GPU, RAM, tiempo de entrenamiento)
+
+### III.5 Integración del chatbot conversacional (FALTA COMPLETA)
+**Extrae:**
+- API usada (Gemini, GPT, etc.) y versión exacta
+- Configuración de la API (temperatura, max_tokens, etc.)
+- Prompts EXACTOS usados (texto completo)
+- Ejemplo de flujo: seña reconocida → prompt → respuesta
+- Manejo de contexto conversacional (código)
+- Manejo de errores y fallbacks
+
+### III.6 Implementación del backend (FastAPI) (FALTA O INCOMPLETA)
+**Extrae:**
+- Estructura de carpetas del backend
+- Código de los endpoints principales:
+  - POST /api/translate
+  - POST /api/chat
+  - POST /api/full-pipeline
+- Modelos de request/response (Pydantic schemas)
+- Gestión de sesiones (si aplica)
+- Middleware usado (CORS, auth, etc.)
+- Configuración de FastAPI (uvicorn, workers, etc.)
+
+### III.7 Implementación del frontend (React) (FALTA COMPLETA)
+**Extrae:**
+- Estructura de componentes React
+- Componente de captura de video (código principal)
+- Comunicación con backend (fetch, axios, etc.)
+- Manejo de estados (useState, useContext, Redux?)
+- Librerías UI usadas (TailwindCSS, MUI, etc.)
+- Ejemplo de flujo: usuario graba → envía → recibe respuesta
+
+### III.8 Protocolo de evaluación experimental (FALTA COMPLETA)
+**Extrae:**
+- Scripts de evaluación (sin resultados, solo metodología)
+- Métricas implementadas (código de cálculo):
+  - top-1, top-3, top-5 accuracy
+  - precision, recall, F1-score
+  - matriz de confusión
+- Sistema de logging/tracking usado (TensorBoard, W&B, etc.)
+- Código de medición de latencia (preprocesamiento, inferencia, total)
+- Casos de prueba definidos
+
+### III.9 Consideraciones de despliegue (FALTA O INCOMPLETA)
+**Extrae:**
+- Dockerfile (si existe)
+- requirements.txt con versiones exactas
+- Configuración para Jetson Orin (scripts, adaptaciones)
+- Variables de entorno necesarias
+- Documentación de instalación/deployment
+
+### III.10 Gestión de riesgos técnicos (REVISAR SI EXISTE)
+**Extrae:**
+- Riesgos técnicos identificados
+- Estrategias de mitigación implementadas
+
+---
+
+## Formato de Salida Requerido
+
+Para cada sección, dame:
+
+### 📦 SECCIÓN III.X.Y - [Nombre]
+
+#### 📍 Ubicación en el repositorio
+```
+src/models/videomae/train.py (líneas 45-120)
+config/hyperparameters.yaml
+```
+
+#### 🔧 Información técnica (código, parámetros, configuraciones)
+```python
+# Código relevante o configuración EXACTA
+learning_rate = 1e-4
+batch_size = 8
+# etc.
+```
+
+
+
+#### 🎯 Decisiones técnicas y justificaciones
+```
+- Se usó AdamW en lugar de Adam por mejor regularización
+```
+
+#### 📄 Referencias a incluir (si sabes de algún paper relevante)
+```
+- Tong et al. (2022) para VideoMAE
+- Loshchilov & Hutter (2019) para AdamW
+```
+
+---
+
+## Restricciones Importantes
+
+1. **NO generes texto académico** (eso lo hará Claude Chat)
+2. **SÍ incluye código completo** cuando sea relevante
+3. **SÍ incluye valores numéricos exactos** (parámetros, configs, cantidades)
+4. **NO inventes información** - si no la tienes, marca como "NO ENCONTRADO"
+5. **Prioriza precisión técnica** sobre lenguaje elegante
+
+---
+
+## Entrega
+
+Dame toda la información en un solo documento markdown estructurado según las secciones de arriba. Márcame claramente qué info NO encontraste para saber qué tendré que complementar manualmente.
+
+## Información adicional que puede ayudarte
+
+- El proyecto usa VideoMAE para reconocimiento de señas
+- Dataset: WLASL100 y WLASL300
+- Backend: FastAPI
+- Frontend: React
+- Chatbot: Gemini API
+- Hardware: Google colab y instancia VM Google cloud para entrenamiento, GTX1660 SUPER para test
+
+
+¡Necesito toda la info técnica cruda para luego redactarla académicamente!
+```

@@ -8,8 +8,9 @@ Responsabilidades:
 """
 
 import time
-import google.generativeai as genai
 from typing import Tuple, List
+
+import google.generativeai as genai
 
 from config import config
 
@@ -26,24 +27,34 @@ class GeminiChatbot:
         """Inicializa cliente de Gemini"""
         try:
             # Configurar API key desde variable de entorno
+            if not config.GEMINI_API_KEY:
+                raise GeminiChatbotError("GEMINI_API_KEY no está configurada")
+
             genai.configure(api_key=config.GEMINI_API_KEY)
 
-            # Configurar modelo
-            self.model = genai.GenerativeModel('gemini-pro')
+            # ---- IMPORTANTE ----
+            # Modelo de la API nueva de Gemini
+            # Si tu cuenta no tiene habilitado este modelo,
+            # la API devolverá 404 aunque el código esté bien.
+            self.model = genai.GenerativeModel("models/gemini-2.0-flash")
 
             # Configuración de generación
             self.generation_config = {
-                'temperature': 0.7,
-                'top_p': 0.9,
-                'top_k': 40,
-                'max_output_tokens': 150,  # Limitar a ~2 oraciones
+                "temperature": 0.7,
+                "top_p": 0.9,
+                "top_k": 40,
+                "max_output_tokens": 150,  # Limitar a ~2 oraciones
             }
 
             print("[INFO] Cliente Gemini inicializado correctamente")
 
         except Exception as e:
+            # Si falla aquí, nada del chatbot funcionará
             raise GeminiChatbotError(f"Error al inicializar Gemini: {str(e)}")
 
+    # --------------------------------------------------------------------- #
+    # Construcción de prompt
+    # --------------------------------------------------------------------- #
     def _build_prompt(self, current_word: str, history: List[str]) -> str:
         """
         Construye el prompt para Gemini según especificaciones.
@@ -86,6 +97,9 @@ Respuesta:"""
 
         return prompt
 
+    # --------------------------------------------------------------------- #
+    # Generación de respuesta
+    # --------------------------------------------------------------------- #
     def generate_response(self, current_word: str, history: List[str]) -> Tuple[str, float]:
         """
         Genera respuesta usando Gemini.
@@ -115,19 +129,23 @@ Respuesta:"""
             )
 
             # Extraer texto de respuesta
-            if response and response.text:
+            if hasattr(response, "text") and response.text:
                 chatbot_response = response.text.strip()
             else:
                 raise GeminiChatbotError("Gemini no devolvió una respuesta válida")
 
             # Calcular latencia
-            latency_ms = (time.time() - start_time) * 1000
+            latency_ms = (time.time() - start_time) * 1000.0
 
             return chatbot_response, latency_ms
 
         except Exception as e:
+            # Este mensaje es el que ves logueado en el backend
             raise GeminiChatbotError(f"Error al generar respuesta: {str(e)}")
 
+    # --------------------------------------------------------------------- #
+    # Respuestas de fallback
+    # --------------------------------------------------------------------- #
     def generate_low_confidence_response(self) -> str:
         """
         Genera respuesta cuando la confianza es baja.
@@ -158,3 +176,4 @@ Respuesta:"""
 
 # Instancia global del chatbot
 gemini_chatbot = GeminiChatbot()
+

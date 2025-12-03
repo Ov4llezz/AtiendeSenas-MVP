@@ -5,16 +5,16 @@ uvicorn[standard]==0.24.0
 python-multipart==0.0.6
 
 # Procesamiento de video
-opencv-python==4.8.1.78
-numpy==1.24.3
+opencv-python==4.10.0.84
+numpy==2.0.2
 
 # PyTorch y modelo VideoMAE
-torch==2.1.0
-torchvision==0.16.0
+torch==2.4.1
+torchvision==0.19.1
 transformers==4.36.0
 
 # Google Gemini
-google-generativeai==0.3.1
+google-generativeai==0.8.3
 
 # Utilidades
 python-dotenv==1.0.0

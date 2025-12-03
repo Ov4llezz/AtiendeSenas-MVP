@@ -1,0 +1,105 @@
+# WLASL100 - Glosas (Glosses) con traducción al español
+# Total de clases: 100
+# Formato: ID | Glosa (Inglés) | Traducción (Español)
+================================================================================
+
+  0 | book                      | libro
+  1 | drink                     | beber
+  2 | computer                  | computadora
+  3 | before                    | antes
+  4 | chair                     | silla
+  5 | go                        | ir
+  6 | clothes                   | ropa
+  7 | who                       | quién
+  8 | candy                     | dulce
+  9 | cousin                    | primo/a
+ 10 | deaf                      | sordo/a
+ 11 | fine                      | bien
+ 12 | help                      | ayudar
+ 13 | no                        | no
+ 14 | thin                      | delgado/a
+ 15 | walk                      | caminar
+ 16 | year                      | año
+ 17 | yes                       | sí
+ 18 | all                       | todo
+ 19 | black                     | negro
+ 20 | cool                      | genial
+ 21 | finish                    | terminar
+ 22 | hot                       | caliente
+ 23 | like                      | gustar
+ 24 | many                      | [SIN TRADUCCIÓN]
+ 25 | mother                    | madre
+ 26 | now                       | ahora
+ 27 | orange                    | naranja
+ 28 | table                     | mesa
+ 29 | thanksgiving              | [SIN TRADUCCIÓN]
+ 30 | what                      | qué
+ 31 | woman                     | mujer
+ 32 | bed                       | cama
+ 33 | blue                      | azul
+ 34 | bowling                   | bolos
+ 35 | can                       | poder
+ 36 | dog                       | perro
+ 37 | family                    | familia
+ 38 | fish                      | pez/pescar
+ 39 | graduate                  | graduarse
+ 40 | hat                       | sombrero
+ 41 | hearing                   | oyente
+ 42 | kiss                      | beso
+ 43 | language                  | idioma
+ 44 | later                     | después
+ 45 | man                       | hombre
+ 46 | shirt                     | camisa
+ 47 | study                     | estudiar
+ 48 | tall                      | alto
+ 49 | white                     | blanco
+ 50 | wrong                     | incorrecto
+ 51 | accident                  | accidente
+ 52 | apple                     | manzana
+ 53 | bird                      | pájaro
+ 54 | change                    | cambiar
+ 55 | color                     | color
+ 56 | corn                      | [SIN TRADUCCIÓN]
+ 57 | cow                       | vaca
+ 58 | dance                     | bailar
+ 59 | dark                      | oscuro
+ 60 | doctor                    | doctor
+ 61 | eat                       | comer
+ 62 | enjoy                     | disfrutar
+ 63 | forget                    | olvidar
+ 64 | give                      | dar
+ 65 | last                      | último
+ 66 | meet                      | conocer
+ 67 | pink                      | rosa
+ 68 | pizza                     | pizza
+ 69 | play                      | jugar
+ 70 | school                    | escuela
+ 71 | secretary                 | [SIN TRADUCCIÓN]
+ 72 | short                     | corto
+ 73 | time                      | tiempo
+ 74 | want                      | querer
+ 75 | work                      | trabajar
+ 76 | africa                    | [SIN TRADUCCIÓN]
+ 77 | basketball                | baloncesto
+ 78 | birthday                  | cumpleaños
+ 79 | brown                     | marrón
+ 80 | but                       | pero
+ 81 | cheat                     | hacer trampa
+ 82 | city                      | ciudad
+ 83 | cook                      | cocinar
+ 84 | decide                    | decidir
+ 85 | full                      | lleno
+ 86 | how                       | cómo
+ 87 | jacket                    | chaqueta
+ 88 | letter                    | carta
+ 89 | medicine                  | medicina
+ 90 | need                      | necesitar
+ 91 | paint                     | [SIN TRADUCCIÓN]
+ 92 | paper                     | papel
+ 93 | pull                      | jalar
+ 94 | purple                    | morado
+ 95 | right                     | derecha/correcto
+ 96 | same                      | mismo
+ 97 | son                       | hijo
+ 98 | tell                      | decir
+ 99 | thursday                  | [SIN TRADUCCIÓN]

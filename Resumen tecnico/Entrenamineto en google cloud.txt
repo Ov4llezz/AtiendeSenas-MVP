@@ -1,0 +1,68 @@
+AGREGACION DE INFO DE FORMA MANUAL 100% VERIFICADA 
+
+
+**MAQUINA VIRTUAL EN GOOGLE CLOUD OCUPADA PARA EL ENTRENAMIENTO**
+
+recopilatorio técnico completo y exacto de MI máquina virtual actual en Google Cloud.
+
+He desglosado la información en Hardware, Software (Entorno) y Almacenamiento.
+
+1. Hardware de Computación (Instancia)
+Nombre de la instancia: l4-new (según el nombre del disco de arranque asociado).
+ID de instancia: 3292341247213503465.
+Tipo de máquina: g2-standard-8.
+GPU: 1 x NVIDIA L4 (24 GB VRAM).
+CPU (Procesador): Intel Cascade Lake.
+Núcleos (vCPU): 8 vCPUs.
+Memoria RAM (Sistema): 32 GB.
+Zona de despliegue: us-east1-d (Carolina del Sur, EE. UU.).
+
+2. Entorno de Software (Imagen de Disco)
+Nombre de la imagen: pytorch-2-7-cu128-ubuntu-2204-nvidia-570-v20251119.
+Sistema Operativo: Ubuntu 22.04 LTS.
+Framework de IA: PyTorch 2.7.
+Versión de CUDA: 12.8 (Deducido de cu128).
+Drivers NVIDIA: Versión 570.
+
+3. Almacenamiento (Disco)
+Tamaño: 300 GB.
+Tipo de disco: Disco persistente balanceado (Balanced Persistent Disk).
+Interfaz: NVMe.
+Modo: Lectura/Escritura.
+
+*durante en entranamiento la capacidad de la vram de la tarjeta L4, rondeaba los 22-23gb, por ende este fue un limitante para el tamaño del bachsize, diferentes pruebas demostaron un batch size máximo de 6 antes de que la tarjeta agotara su vrma
+USO DE CPU EN "UTILIZACION CPU.png"
+USO DE CREDITOS EN "Consumo creditos google cloud.png"
+
+
+
+****Infraestructura de Entrenamiento e Integración Híbrida***
+Para el entrenamiento del modelo, se implementó una arquitectura de procesamiento híbrida que desacopla la interfaz de desarrollo del motor de cómputo. Se utilizó Google Colab como interfaz de usuario (Frontend/IDE) debido a sus capacidades de visualización y documentación interactiva, mientras que la carga computacional fue ejecutada en una instancia de máquina virtual (VM) dedicada en Google Cloud Platform (GCP).
+
+La integración entre el entorno local (Colab) y el servidor remoto (GCP g2-standard-8 con GPU NVIDIA L4) se estableció mediante un protocolo de conexión segura y compatibilidad de backends, detallado a continuación:
+
+X.X.1 Túnel SSH y Reenvío de Puertos (Port Forwarding)
+La comunicación entre el cliente local y la instancia remota se aseguró mediante un túnel SSH encriptado. Se utilizó la técnica de reenvío de puertos local (local port forwarding), mapeando un puerto arbitrario de la máquina local (9999) hacia el puerto de servicio de Jupyter en la VM (8888).
+
+El comando de infraestructura utilizado fue: gcloud compute ssh ... -- -L 9999:localhost:8888
+
+Esto permite que las peticiones HTTP enviadas a localhost:9999 sean encapsuladas a través del protocolo SSH y entregadas de manera segura al servidor de inferencia en la nube, mitigando la necesidad de exponer puertos críticos a la red pública de internet.
+
+X.X.2 Gestión de Compatibilidad del Entorno Jupyter
+Para habilitar la conexión con el entorno de ejecución de Google Colab ("Local Runtime"), fue necesario realizar una degradación controlada (downgrade) de la versión del servidor Jupyter y la instalación de extensiones de transporte específicas:
+
+Estandarización de Versión (notebook<7.0.0): Se restringió la versión del paquete notebook a la serie 6.x. Esto se debe a que la arquitectura actual de Google Colab utiliza protocolos de comunicación legacy que no son nativamente compatibles con la arquitectura asíncrona introducida en Jupyter Notebook 7.0+.
+
+Protocolo de Transporte (jupyter_http_over_ws): Se implementó la extensión Jupyter HTTP over WebSocket. Dado que los navegadores modernos restringen las conexiones directas entre orígenes web seguros (HTTPS) y servidores locales no seguros, esta extensión actúa como una capa de interoperabilidad, permitiendo el flujo de datos bidireccional mediante WebSockets autenticados entre la interfaz web de Colab y el kernel remoto.
+
+X.X.3 Políticas de Seguridad de Origen Cruzado (CORS)
+Finalmente, para autorizar la inyección de código y la recepción de salidas desde el dominio de Google, se configuró el servidor Jupyter con parámetros explícitos de Cross-Origin Resource Sharing (CORS):
+
+Parámetro: --NotebookApp.allow_origin='https://colab.research.google.com'
+
+Justificación: Esta directiva modifica la política de seguridad del servidor para aceptar peticiones provenientes exclusivamente del dominio de investigación de Google, rechazando cualquier otro intento de conexión externa no autorizada, garantizando así la integridad del entorno de entrenamiento.
+---------AGREGAR ESTA SECCION (ADAPTALA SI ES NECESARIO PERO MANTEN LOGICA DE FUNCIONAMIENTO) EN EL CAPITULO 3 DE IMPLEMENTACION------------------------------
+
+
+
+****el test de los modelos de hizo con gpu local, nvidia gtx1660 super***

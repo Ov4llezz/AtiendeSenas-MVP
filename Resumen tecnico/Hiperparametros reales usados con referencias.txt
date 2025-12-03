@@ -1,0 +1,103 @@
+AGREGACION DE INFO DE FORMA MANUAL 100% VERIFICADA 
+
+3.X.1 Configuración inicial de hiperparámetros (batch size = 4)
+
+En la primera versión del entrenamiento se empleó un conjunto de hiperparámetros estándar para fine-tuning de modelos basados en Vision Transformers (ViT) y VideoMAE, los cuales han demostrado estabilidad en tareas de clasificación de video. La configuración inicial fue:
+
+batch_size = 4
+
+max_epochs = 30
+
+learning_rate = 1×10⁻⁴
+
+patience = 10
+
+weight_decay = 0.05
+
+label_smoothing = 0.1
+
+class_weighted = True
+
+freeze_backbone = False
+
+warmup_ratio = 0.1
+
+min_lr = 1×10⁻⁶
+
+gradient_clip = 1.0
+
+num_workers = 6, save_every = 5
+
+Esta configuración se basa en recomendaciones ampliamente utilizadas en fine-tuning de transformadores (Dosovitskiy et al., 2021), donde tasas de aprendizaje en el rango de 1×10⁻⁴ y weight decay≈0.05 son parámetros típicos. Asimismo, se entrena el backbone completamente, ya que existe un alto desfase de dominio entre el pre-entrenamiento en videos genéricos (Kinetics-400) y el dominio altamente especializado de lengua de señas, lo que hace recomendable ajustar todas las capas (Elhassan & Al-Khuzayem, 2025).
+
+3.X.2 Configuración ajustada (batch size = 6)
+
+Luego de analizar los resultados (precisión en entrenamiento cercana al 100%, con brecha notable respecto a validación y mejora muy lenta tras la época 20), se realizó un ajuste fino de hiperparámetros con el objetivo de mejorar la generalización del modelo. La configuración ajustada fue:
+
+batch_size = 6
+
+max_epochs = 45
+
+learning_rate = 8×10⁻⁵
+
+patience = 12
+
+weight_decay = 0.04
+
+label_smoothing = 0.07
+
+class_weighted = True
+
+freeze_backbone = False
+
+warmup_ratio = 0.07
+
+min_lr = 1×10⁻⁵
+
+gradient_clip = 1.0
+
+num_workers = 6, save_every = 5
+
+El aumento del tamaño de batch responde únicamente a la disponibilidad de VRAM, ya que los modelos tipo ViT se benefician de lotes ligeramente más grandes al entregar gradientes más estables (Liu et al., 2021). La reducción del learning rate a 8×10⁻⁵ se alinea con la recomendación de usar tasas más conservadoras durante el fine-tuning, para evitar sobrescribir en exceso las representaciones aprendidas (Tong et al., 2022).
+
+El ajuste del label smoothing y del weight decay hacia valores moderados se justifica por su efecto positivo demostrado en la regularización de modelos transformers (Müller et al., 2019), especialmente cuando se trabaja con datasets pequeños o desbalanceados, como WLASL100. Finalmente, incrementar el warm-up y fijar un learning rate mínimo más alto evita que el optimizador quede “congelado” en etapas finales del entrenamiento, problema identificado en estudios de entrenamiento prolongado de ViT (Wightman et al., 2021).
+
+3.X.3 Justificación de los hiperparámetros clave (con citas)
+
+El tamaño de batch se incrementó de 4 a 6 debido a las limitaciones de memoria. De acuerdo con Liu et al. (2021), los transformadores de visión pueden entrenarse de manera estable incluso con mini-batches pequeños, siendo la estabilidad del gradiente el factor clave.
+
+La tasa de aprendizaje inicial de 1×10⁻⁴ se redujo a 8×10⁻⁵ en la versión ajustada. La literatura sugiere que en fine-tuning de modelos pre-entrenados, tasas más bajas preservan mejor las representaciones aprendidas durante el pre-entrenamiento y mejoran la estabilidad (Tong et al., 2022; Dosovitskiy et al., 2021).
+
+El weight decay se ajustó de 0.05 a 0.04. Este parámetro cumple un papel importante en la regularización de redes profundas y especialmente en transformers (Loshchilov & Hutter, 2019), ayudando a evitar sobreajuste sin restringir demasiado la capacidad del modelo.
+
+La técnica de label smoothing (Szegedy et al., 2016; Müller et al., 2019) es reconocida por mejorar la calibración y la generalización, lo cual resulta crítico en reconocimiento de señas, donde la variabilidad entre signantes puede ser significativa. Reducirlo de 0.1 a 0.07 permite un equilibrio entre robustez y capacidad discriminativa.
+
+Mantener freeze_backbone = False se respalda en la existencia de un domain shift entre el pre-entrenamiento (videos de acciones) y la lengua de señas. Estudios recientes en SLR basados en transformers muestran mejoras cuando se ajustan todas las capas (Elhassan & Al-Khuzayem, 2025).
+
+El uso de warm-up y un learning rate mínimo no demasiado bajo está ampliamente documentado como necesario para estabilizar el entrenamiento de transformers (Goyal et al., 2017; Wightman et al., 2021). Ajustar el warm-up a 0.07 y elevar el LR mínimo a 1×10⁻⁵ evitó una caída prematura en la capacidad de aprendizaje observada en la versión inicial.
+
+Finalmente, el uso de gradient clipping = 1.0 sigue lo recomendado en arquitecturas profundas con secuencias largas, mitigando gradientes explosivos y estabilizando el entrenamiento (Pascanu et al., 2013).
+
+✦ Referencias en formato APA
+
+Dosovitskiy, A., Beyer, L., Kolesnikov, A., Weissenborn, D., Zhai, X., Unterthiner, T., … & Houlsby, N. (2021). An Image is Worth 16×16 Words: Transformers for Image Recognition at Scale. International Conference on Learning Representations (ICLR).
+
+Elhassan, S., & Al-Khuzayem, L. (2025). Transformer Models for Isolated Saudi Sign Language Recognition. Applied Mathematics & Information Sciences.
+
+Goyal, P., Dollár, P., Girshick, R., Noordhuis, P., Wesolowski, L., Kyrola, A., … & He, K. (2017). Accurate, Large Minibatch SGD: Training ImageNet in 1 Hour. arXiv:1706.02677.
+
+Liu, Z., Lin, Y., Cao, Y., Hu, H., Wei, Y., Zhang, Z., … & Guo, B. (2021). Swin Transformer: Hierarchical Vision Transformer using Shifted Windows. ICCV.
+
+Loshchilov, I., & Hutter, F. (2019). Decoupled Weight Decay Regularization. International Conference on Learning Representations (ICLR).
+
+Müller, R., Kornblith, S., & Hinton, G. (2019). When Does Label Smoothing Help? NeurIPS.
+
+Pascanu, R., Mikolov, T., & Bengio, Y. (2013). On the difficulty of training recurrent neural networks. ICML.
+
+Szegedy, C., Vanhoucke, V., Ioffe, S., Shlens, J., & Wojna, Z. (2016). Rethinking the Inception Architecture for Computer Vision. CVPR.
+
+Tong, Z., Song, Y., Wang, J., & Wang, L. (2022). VideoMAE: Masked Autoencoders Are Data-Efficient Learners for Self-Supervised Video Pre-Training. NeurIPS.
+
+Wightman, R., Touvron, H., & Jégou, H. (2021). ResNet strikes back: An improved training procedure in timm. arXiv:2110.00476.
+
+**manten la base de esta estructura, valores y referencias, solo ajusta vocabulario y redaccion si corresponde*****

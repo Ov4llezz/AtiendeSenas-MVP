@@ -1,0 +1,209 @@
+================================================================================
+REPORTE DETALLADO DEL DATASET WLASL100_V2
+Sign Language Recognition - WLASL 100 Classes
+================================================================================
+
+RESUMEN GENERAL
+--------------------------------------------------------------------------------
+Total de Glosas (Clases):        100
+Total de Videos:                 1235
+  - Training:                    1001 (81.1%)
+  - Validation:                  117 (9.5%)
+  - Test:                        117 (9.5%)
+
+ESTADISTICAS DE DISTRIBUCION
+--------------------------------------------------------------------------------
+Videos por glosa (promedio):     12.3
+Videos por glosa (minimo):       7
+Videos por glosa (maximo):       20
+Videos por glosa (mediana):      12
+
+
+DETALLE POR GLOSA (ALFABETICO)
+================================================================================
+#     Glosa                     Total    Train    Val      Test     
+--------------------------------------------------------------------------------
+1     accident                  15       9        3        3        
+2     africa                    13       9        2        2        
+3     all                       13       9        2        2        
+4     apple                     9        9        0        0        
+5     basketball                11       9        1        1        
+6     bed                       12       10       1        1        
+7     before                    20       14       3        3        
+8     bird                      12       10       1        1        
+9     birthday                  10       6        2        2        
+10    black                     14       10       2        2        
+11    blue                      10       10       0        0        
+12    book                      9        9        0        0        
+13    bowling                   14       12       1        1        
+14    brown                     10       8        1        1        
+15    but                       12       8        2        2        
+16    can                       11       9        1        1        
+17    candy                     14       10       2        2        
+18    chair                     8        6        1        1        
+19    change                    13       11       1        1        
+20    cheat                     10       8        1        1        
+21    city                      11       9        1        1        
+22    clothes                   9        7        1        1        
+23    color                     14       12       1        1        
+24    computer                  20       18       1        1        
+25    cook                      10       10       0        0        
+26    cool                      15       11       2        2        
+27    corn                      11       7        2        2        
+28    cousin                    12       10       1        1        
+29    cow                       13       11       1        1        
+30    dance                     9        9        0        0        
+31    dark                      12       8        2        2        
+32    deaf                      15       11       2        2        
+33    decide                    9        9        0        0        
+34    doctor                    10       8        1        1        
+35    dog                       11       11       0        0        
+36    drink                     20       16       2        2        
+37    eat                       8        8        0        0        
+38    enjoy                     9        9        0        0        
+39    family                    12       12       0        0        
+40    fine                      12       12       0        0        
+41    finish                    14       12       1        1        
+42    fish                      14       10       2        2        
+43    forget                    13       11       1        1        
+44    full                      12       10       1        1        
+45    give                      15       11       2        2        
+46    go                        16       14       1        1        
+47    graduate                  10       10       0        0        
+48    hat                       12       10       1        1        
+49    hearing                   14       12       1        1        
+50    help                      12       8        2        2        
+51    hot                       16       12       2        2        
+52    how                       11       7        2        2        
+53    jacket                    10       8        1        1        
+54    kiss                      16       10       3        3        
+55    language                  11       9        1        1        
+56    last                      13       7        3        3        
+57    later                     10       10       0        0        
+58    letter                    12       10       1        1        
+59    like                      17       13       2        2        
+60    man                       11       9        1        1        
+61    many                      14       10       2        2        
+62    medicine                  8        8        0        0        
+63    meet                      12       10       1        1        
+64    mother                    15       13       1        1        
+65    need                      10       10       0        0        
+66    no                        15       13       1        1        
+67    now                       14       12       1        1        
+68    orange                    12       10       1        1        
+69    paint                     10       10       0        0        
+70    paper                     11       11       0        0        
+71    pink                      12       8        2        2        
+72    pizza                     15       11       2        2        
+73    play                      13       9        2        2        
+74    pull                      11       9        1        1        
+75    purple                    10       8        1        1        
+76    right                     11       9        1        1        
+77    same                      12       10       1        1        
+78    school                    11       9        1        1        
+79    secretary                 14       10       2        2        
+80    shirt                     16       12       2        2        
+81    short                     11       9        1        1        
+82    son                       8        8        0        0        
+83    study                     13       13       0        0        
+84    table                     7        5        1        1        
+85    tall                      13       11       1        1        
+86    tell                      12       10       1        1        
+87    thanksgiving              16       14       1        1        
+88    thin                      16       12       2        2        
+89    thursday                  8        8        0        0        
+90    time                      9        7        1        1        
+91    walk                      12       10       1        1        
+92    want                      12       10       1        1        
+93    what                      12       8        2        2        
+94    white                     14       12       1        1        
+95    who                       15       13       1        1        
+96    woman                     14       10       2        2        
+97    work                      11       9        1        1        
+98    wrong                     12       12       0        0        
+99    year                      14       8        3        3        
+100   yes                       19       13       3        3        
+================================================================================
+
+TOP 20 GLOSAS CON MAS VIDEOS
+================================================================================
+Rank   Glosa                     Total    Train    Val      Test     
+--------------------------------------------------------------------------------
+1      before                    20       14       3        3        
+2      computer                  20       18       1        1        
+3      drink                     20       16       2        2        
+4      yes                       19       13       3        3        
+5      like                      17       13       2        2        
+6      go                        16       14       1        1        
+7      hot                       16       12       2        2        
+8      kiss                      16       10       3        3        
+9      shirt                     16       12       2        2        
+10     thanksgiving              16       14       1        1        
+11     thin                      16       12       2        2        
+12     accident                  15       9        3        3        
+13     cool                      15       11       2        2        
+14     deaf                      15       11       2        2        
+15     give                      15       11       2        2        
+16     mother                    15       13       1        1        
+17     no                        15       13       1        1        
+18     pizza                     15       11       2        2        
+19     who                       15       13       1        1        
+20     black                     14       10       2        2        
+================================================================================
+
+TOP 20 GLOSAS CON MENOS VIDEOS
+================================================================================
+Rank   Glosa                     Total    Train    Val      Test     
+--------------------------------------------------------------------------------
+1      table                     7        5        1        1        
+2      chair                     8        6        1        1        
+3      eat                       8        8        0        0        
+4      medicine                  8        8        0        0        
+5      son                       8        8        0        0        
+6      thursday                  8        8        0        0        
+7      apple                     9        9        0        0        
+8      book                      9        9        0        0        
+9      clothes                   9        7        1        1        
+10     dance                     9        9        0        0        
+11     decide                    9        9        0        0        
+12     enjoy                     9        9        0        0        
+13     time                      9        7        1        1        
+14     birthday                  10       6        2        2        
+15     blue                      10       10       0        0        
+16     brown                     10       8        1        1        
+17     cheat                     10       8        1        1        
+18     cook                      10       10       0        0        
+19     doctor                    10       8        1        1        
+20     graduate                  10       10       0        0        
+================================================================================
+
+INFORMACION DEL DATASET
+================================================================================
+Nombre:           WLASL100_V2
+Fuente:           WLASL (Word-Level American Sign Language)
+Idioma:           American Sign Language (ASL)
+Tipo:             Video (Sign Language Recognition)
+Seleccion:        100 glosas mas comunes para entrenamiento
+Formato videos:   MP4
+Resolucion:       Variable (procesado a 224x224 en entrenamiento)
+FPS:              Variable (muestreado a 16 frames por video)
+
+Nota:             Este reporte cuenta solo los videos descargados
+                  localmente en data\wlasl100_v2/
+
+Estructura del dataset:
+  data\wlasl100_v2/
+  ├── videos/             # Todos los videos
+  ├── splits/
+  │   ├── train_split.txt
+  │   ├── val_split.txt
+  │   └── test_split.txt
+  ├── nslt_100.json       # Mapeo video_id -> clase
+  └── WLASL_v0.3.json     # Metadata del dataset
+
+================================================================================
+Generado por: generate_dataset_report_v2.py
+Fecha: 20251202_231038
+Proyecto: AtiendeSenas - Tesis UNAB
+Autor: Rafael Ovalle
+================================================================================

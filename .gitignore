@@ -2,6 +2,7 @@
 # === Entorno virtual ===
 venv/
 venv_gemini/
+venv_backend/
 .env
 
 # === Datos pesados ===
@@ -22,6 +23,12 @@ data/wlasl300/videos/
 data/wlasl300/dataset/train/*.mp4
 data/wlasl300/dataset/val/*.mp4
 data/wlasl300/dataset/test/*.mp4
+
+# Datasets v2
+data/wlasl100_v2/videos/
+data/wlasl100_v2/dataset/
+data/wlasl300_v2/videos/
+data/wlasl300_v2/dataset/
 
 # Permitir archivos de splits (son pequeños)
 # Permitir archivos JSON de configuración
@@ -47,6 +54,12 @@ __pycache__/
 *.pyd
 *.swp
 *.tmp
+nul
+
+# === Carpetas experimentales/temporales ===
+Resultados entrenamiento/
+entreno local/
+Oraciones/
 
 # === Jupyter Notebooks checkpoint ===
 .ipynb_checkpoints/

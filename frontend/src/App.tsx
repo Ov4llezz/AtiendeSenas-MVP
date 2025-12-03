@@ -11,6 +11,7 @@ import ChatResponseDisplay from './components/ChatResponseDisplay';
 import LatencyPanel from './components/LatencyPanel';
 import LoadingIndicator from './components/LoadingIndicator';
 import { PipelineResponse } from './types';
+import logo from './logo.png';
 
 // URL del backend
 const API_BASE_URL = 'http://localhost:8000';
@@ -81,8 +82,30 @@ function App() {
     setError(null);
   };
 
+  // Handler: Limpiar historial de conversación
+  const handleClearHistory = async () => {
+    try {
+      await axios.post(`${API_BASE_URL}/api/reset-history`);
+      // Resetear resultado para reflejar el historial limpio
+      if (result) {
+        setResult({ ...result, history: [] });
+      }
+    } catch (err) {
+      console.error('Error al limpiar historial:', err);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 py-8 px-4 relative">
+      {/* Logo en esquina superior izquierda */}
+      <div className="absolute top-6 left-6 z-10">
+        <img
+          src={logo}
+          alt="Logo AtiendeSenas"
+          className="h-32 w-auto object-contain"
+        />
+      </div>
+
       {/* Header */}
       <header className="text-center mb-8">
         <h1 className="text-5xl font-bold text-gray-800 mb-2">
@@ -152,8 +175,17 @@ function App() {
             {result.history && result.history.length > 0 && (
               <div className="w-full max-w-3xl mx-auto mt-4">
                 <div className="bg-gray-100 rounded-lg p-4 text-sm">
-                  <div className="font-medium text-gray-700 mb-1">
-                    Historial de conversación:
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-medium text-gray-700">
+                      Historial de conversación:
+                    </div>
+                    <button
+                      onClick={handleClearHistory}
+                      className="px-4 py-2 text-sm font-semibold text-white rounded-lg transition-colors duration-200 shadow-sm hover:opacity-90"
+                      style={{ backgroundColor: '#1E4B7D' }}
+                    >
+                      Limpiar historial
+                    </button>
                   </div>
                   <div className="text-gray-600">
                     {result.history.join(' → ')}
@@ -166,7 +198,8 @@ function App() {
             <div className="w-full max-w-3xl mx-auto mt-6 text-center">
               <button
                 onClick={handleReset}
-                className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md"
+                className="px-8 py-3 text-white font-semibold rounded-lg transition-colors duration-200 shadow-md hover:opacity-90"
+                style={{ backgroundColor: '#1E4B7D' }}
               >
                 Subir otro video
               </button>
@@ -179,6 +212,9 @@ function App() {
       <footer className="text-center mt-12 text-gray-500 text-sm">
         <p>Tótem LSCh v1.0.0 - Sistema de Reconocimiento de Señas</p>
         <p className="mt-1">VideoMAE + Gemini Chatbot</p>
+        <p className="mt-4 text-lg font-medium italic" style={{ color: '#95B5CF' }}>
+          Entender y ser entendido
+        </p>
       </footer>
     </div>
   );
